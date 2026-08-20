@@ -4,12 +4,14 @@ import { AnswerValidator } from './AnswerValidator';
 import { QuestionGenerator } from './QuestionGenerator';
 import { ScoreManager } from './ScoreManager';
 
+const DIFF_LEVEL = 1;
 export class GameEngine {
 	private readonly questionGenerator: QuestionGenerator;
 	private readonly answerValidator: AnswerValidator;
 	private readonly scoreManager: ScoreManager;
 
 	private state: GameState;
+	private questionStartedAt: number | null = null;
 
 	constructor() {
 		this.questionGenerator = new QuestionGenerator();
@@ -35,12 +37,13 @@ export class GameEngine {
 			score: 0,
 			combo: 0,
 			lives: GAME_CONFIG.initialLives,
-			question: this.questionGenerator.generate(1),
+			question: this.questionGenerator.generate(DIFF_LEVEL),
 			bestCombo: 0,
 			totalQuestions: 0,
 			correctAnswers: 0,
 			result: null,
 		};
+		this.questionStartedAt = Date.now();
 	}
 
 	submitAnswer(answer: number): boolean {
@@ -48,7 +51,14 @@ export class GameEngine {
 			return false;
 		}
 
+		if (this.isTimeExpired()) {
+			this.submitTimeout();
+			return false;
+		}
+
 		const correct = this.answerValidator.validate(this.state.question, answer);
+
+		this.state.totalQuestions += 1;
 
 		if (correct) {
 			const earnedScore = this.scoreManager.calculateCorrectScore(
@@ -56,6 +66,10 @@ export class GameEngine {
 			);
 			this.state.score += earnedScore;
 			this.state.combo += 1;
+			this.state.correctAnswers += 1;
+
+			// best combo is max
+			this.state.bestCombo = Math.max(this.state.bestCombo, this.state.combo);
 		} else {
 			this.state.lives -= 1;
 			this.state.combo = 0;
@@ -66,9 +80,29 @@ export class GameEngine {
 			this.state.question = null;
 		} else {
 			this.state.question = this.questionGenerator.generate(1);
+			this.questionStartedAt = Date.now();
 		}
+		// set lại tổng thể result khi submit answer
+		this.state.result = {
+			score: this.state.score,
+			bestCombo: this.state.bestCombo,
+			totalQuestions: this.state.totalQuestions,
+			correctAnswers: this.state.correctAnswers,
+		};
 
 		return correct;
+	}
+
+	getRemainingTimeMs(): number {
+		if (this.questionStartedAt === null) {
+			return 0;
+		}
+		const elapsed = Date.now() - this.questionStartedAt;
+		return Math.max(0, GAME_CONFIG.questionTimeLimitMs - elapsed);
+	}
+
+	isTimeExpired(): boolean {
+		return this.getRemainingTimeMs() <= 0;
 	}
 
 	getState(): GameState {
@@ -89,11 +123,48 @@ export class GameEngine {
 			score: 0,
 			combo: 0,
 			bestCombo: 0,
-			lives: GAME_CONFIG.initialLives,
+			lives: 3,
 			totalQuestions: 0,
 			correctAnswers: 0,
 			question: null,
 			result: null,
 		};
+	}
+
+	private finishGame(): void {
+		this.state.status = 'game_over';
+
+		this.state.question = null;
+
+		this.state.result = {
+			score: this.state.score,
+			bestCombo: this.state.bestCombo,
+			totalQuestions: this.state.totalQuestions,
+			correctAnswers: this.state.correctAnswers,
+		};
+
+		this.questionStartedAt = null;
+	}
+
+	private generateNextQuestion(): void {
+		this.state.question = this.questionGenerator.generate(DIFF_LEVEL);
+		this.questionStartedAt = Date.now();
+	}
+
+	submitTimeout(): void {
+		if (this.state.status !== 'playing') {
+			return;
+		}
+
+		this.state.totalQuestions += 1;
+		this.state.combo = 0;
+		this.state.lives -= 1;
+
+		if (this.state.lives <= 0) {
+			this.finishGame();
+			return;
+		}
+
+		this.generateNextQuestion();
 	}
 }
