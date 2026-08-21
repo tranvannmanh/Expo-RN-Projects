@@ -1,15 +1,27 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import {
+	AnswerGrid,
+	ComboDisplay,
+	GameHeader,
+	GameTimer,
+} from '@/features/math/components';
+import QuestionCard from '@/features/math/components/QuestionCard';
 import { useGame } from '@/features/math/hooks/useGame';
 import { useEffect } from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function GameScreen() {
-	const { state, startGame, submitAnswer, restartGame, remainingTimeMs } =
-		useGame();
-	const remainingSeconds = Math.ceil(remainingTimeMs / 1000);
+	const {
+		state,
+		startGame,
+		submitAnswer,
+		restartGame,
+		remainingTimeMs,
+		answerFeedback,
+	} = useGame();
 	const result = state.result;
 	const accuracy =
 		result && result.totalQuestions > 0
@@ -51,20 +63,15 @@ export default function GameScreen() {
 	return (
 		<SafeAreaView style={styles.safeAreaView}>
 			<ThemedView style={styles.container}>
-				<ThemedView>
-					<ThemedView style={styles.header}>
-						<ThemedText type="subtitle">Score: {state.score}</ThemedText>
-						<ThemedText type="default">{'❤️'.repeat(state.lives)}</ThemedText>
-					</ThemedView>
+				{/* <ThemedView>
+					<GameHeader score={state.score} lives={state.lives} />
 					<ThemedText type="default" style={styles.combo}>
 						Combo x{state.combo}
 					</ThemedText>
 				</ThemedView>
 
 				<ThemedView style={styles.questionContainer}>
-					<ThemedText type="default">
-						Time remains: {remainingSeconds}s
-					</ThemedText>
+					<GameTimer remainingTimeMs={remainingTimeMs} />
 
 					<ThemedText type="title">{state.question.expression}</ThemedText>
 				</ThemedView>
@@ -79,7 +86,20 @@ export default function GameScreen() {
 							<ThemedText type="subtitle">{option}</ThemedText>
 						</TouchableOpacity>
 					))}
-				</ThemedView>
+				</ThemedView> */}
+				<GameHeader score={state.score} lives={state.lives} />
+
+				<GameTimer remainingTimeMs={remainingTimeMs} status={state.status} />
+
+				<QuestionCard expression={state.question.expression} />
+
+				<AnswerGrid
+					options={state.question.options}
+					onAnswer={submitAnswer}
+					feedback={answerFeedback}
+				/>
+
+				<ComboDisplay combo={state.combo} />
 			</ThemedView>
 		</SafeAreaView>
 	);

@@ -1,26 +1,26 @@
-import { View, type ViewProps } from 'react-native';
+import { TouchableOpacity, TouchableOpacityProps } from 'react-native';
 
 import { ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import Animated from 'react-native-reanimated';
 
-export type ThemedViewProps = ViewProps & {
+export type ThemedTouchableProps = TouchableOpacityProps & {
 	lightColor?: string;
 	darkColor?: string;
 	type?: ThemeColor;
 };
 
-export function ThemedView({
+export function ThemedTouchable({
 	style,
 	lightColor,
 	darkColor,
 	type,
 	...otherProps
-}: ThemedViewProps) {
+}: ThemedTouchableProps) {
 	const theme = useTheme();
 
 	return (
-		<View
+		<TouchableOpacity
 			style={[
 				{
 					backgroundColor: theme[type ?? 'background'],
@@ -33,4 +33,5 @@ export function ThemedView({
 	);
 }
 
-export const AnimatedThemedView = Animated.createAnimatedComponent(ThemedView);
+export const AnimatedThemedTouchable =
+	Animated.createAnimatedComponent(ThemedTouchable);

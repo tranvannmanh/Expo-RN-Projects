@@ -64,31 +64,27 @@ export class GameEngine {
 			const earnedScore = this.scoreManager.calculateCorrectScore(
 				this.state.combo,
 			);
+
 			this.state.score += earnedScore;
 			this.state.combo += 1;
 			this.state.correctAnswers += 1;
 
-			// best combo is max
 			this.state.bestCombo = Math.max(this.state.bestCombo, this.state.combo);
 		} else {
 			this.state.lives -= 1;
 			this.state.combo = 0;
 		}
 
-		if (this.state.lives <= 0) {
-			this.state.status = 'game_over';
-			this.state.question = null;
-		} else {
-			this.state.question = this.questionGenerator.generate(1);
-			this.questionStartedAt = Date.now();
-		}
-		// set lại tổng thể result khi submit answer
 		this.state.result = {
 			score: this.state.score,
 			bestCombo: this.state.bestCombo,
 			totalQuestions: this.state.totalQuestions,
 			correctAnswers: this.state.correctAnswers,
 		};
+
+		if (this.state.lives <= 0) {
+			this.finishGame();
+		}
 
 		return correct;
 	}
@@ -123,12 +119,13 @@ export class GameEngine {
 			score: 0,
 			combo: 0,
 			bestCombo: 0,
-			lives: 3,
+			lives: GAME_CONFIG.initialLives,
 			totalQuestions: 0,
 			correctAnswers: 0,
 			question: null,
 			result: null,
 		};
+		this.questionStartedAt = null;
 	}
 
 	private finishGame(): void {
@@ -162,6 +159,14 @@ export class GameEngine {
 
 		if (this.state.lives <= 0) {
 			this.finishGame();
+			return;
+		}
+
+		this.generateNextQuestion();
+	}
+
+	nextQuestion(): void {
+		if (this.state.status !== 'playing') {
 			return;
 		}
 

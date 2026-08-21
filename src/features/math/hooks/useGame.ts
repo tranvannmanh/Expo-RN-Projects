@@ -13,6 +13,10 @@ export function useGame() {
 
 	const [state, setState] = useState<GameState>(() => engine.getState());
 	const [remainingTimeMs, setRemainingTimeMs] = useState(0);
+	const [answerFeedback, setAnswerFeedback] = useState<{
+		answer: number;
+		result: 'correct' | 'wrong';
+	} | null>(null);
 
 	useEffect(() => {
 		if (state.status !== 'playing') {
@@ -48,8 +52,29 @@ export function useGame() {
 
 	const submitAnswer = useCallback(
 		(answer: number) => {
-			engine.submitAnswer(answer);
+			const correct = engine.submitAnswer(answer);
+
+			setAnswerFeedback({
+				answer,
+				result: correct ? 'correct' : 'wrong',
+			});
+
 			setState(engine.getState());
+
+			if (engine.getState().status === 'game_over') {
+				setTimeout(() => {
+					setAnswerFeedback(null);
+				}, 400);
+
+				return;
+			}
+
+			setTimeout(() => {
+				engine.nextQuestion();
+
+				setAnswerFeedback(null);
+				setState(engine.getState());
+			}, 400);
 		},
 		[engine],
 	);
@@ -67,5 +92,6 @@ export function useGame() {
 		submitAnswer,
 		restartGame,
 		remainingTimeMs,
+		answerFeedback,
 	};
 }
