@@ -63,30 +63,6 @@ export default function GameScreen() {
 	return (
 		<SafeAreaView style={styles.safeAreaView}>
 			<ThemedView style={styles.container}>
-				{/* <ThemedView>
-					<GameHeader score={state.score} lives={state.lives} />
-					<ThemedText type="default" style={styles.combo}>
-						Combo x{state.combo}
-					</ThemedText>
-				</ThemedView>
-
-				<ThemedView style={styles.questionContainer}>
-					<GameTimer remainingTimeMs={remainingTimeMs} />
-
-					<ThemedText type="title">{state.question.expression}</ThemedText>
-				</ThemedView>
-
-				<ThemedView style={styles.options}>
-					{state.question.options.map((option) => (
-						<TouchableOpacity
-							key={option}
-							style={styles.option}
-							onPress={() => submitAnswer(option)}
-						>
-							<ThemedText type="subtitle">{option}</ThemedText>
-						</TouchableOpacity>
-					))}
-				</ThemedView> */}
 				<GameHeader score={state.score} lives={state.lives} />
 
 				<GameTimer remainingTimeMs={remainingTimeMs} status={state.status} />

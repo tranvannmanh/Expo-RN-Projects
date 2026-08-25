@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameEngine } from '../models/GameEngine';
 import { GameState } from '../types';
+import { hapticCorrect, hapticTimeout, hapticWrong } from '../utils/haptics';
 
 export function useGame() {
 	const engineRef = useRef<GameEngine | null>(null);
-
+	const timeoutHandledRef = useRef(false);
 	if (!engineRef.current) {
 		engineRef.current = new GameEngine();
 	}
@@ -27,6 +28,10 @@ export function useGame() {
 			const remaining = engine.getRemainingTimeMs();
 			if (remaining <= 0) {
 				engine.submitTimeout();
+				if (!timeoutHandledRef.current) {
+					hapticTimeout();
+					timeoutHandledRef.current = true;
+				}
 				setState(engine.getState());
 				setRemainingTimeMs(0);
 				return;
@@ -53,6 +58,12 @@ export function useGame() {
 	const submitAnswer = useCallback(
 		(answer: number) => {
 			const correct = engine.submitAnswer(answer);
+
+			if (correct) {
+				hapticCorrect();
+			} else {
+				hapticWrong();
+			}
 
 			setAnswerFeedback({
 				answer,
@@ -82,7 +93,7 @@ export function useGame() {
 	const restartGame = useCallback(() => {
 		engine.reset();
 		engine.start();
-
+		timeoutHandledRef.current = false; // to enable haptic timeout on next game
 		setState(engine.getState());
 	}, [engine]);
 
