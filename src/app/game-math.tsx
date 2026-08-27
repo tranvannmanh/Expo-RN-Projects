@@ -5,12 +5,14 @@ import {
 	AnswerGrid,
 	ComboDisplay,
 	GameHeader,
+	GameOverScreen,
 	GameTimer,
 } from '@/features/math/components';
 import QuestionCard from '@/features/math/components/QuestionCard';
+import { ScoreFeedback } from '@/features/math/components/ScoreFeedback';
 import { useGame } from '@/features/math/hooks/useGame';
 import { useEffect } from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function GameScreen() {
@@ -21,35 +23,20 @@ export default function GameScreen() {
 		restartGame,
 		remainingTimeMs,
 		answerFeedback,
+		scoreFeedback,
+		highScore,
 	} = useGame();
-	const result = state.result;
-	const accuracy =
-		result && result.totalQuestions > 0
-			? Math.round((result.correctAnswers / result.totalQuestions) * 100)
-			: 0;
 
 	useEffect(() => {
 		startGame();
 	}, [startGame]);
 
 	if (state.status === 'game_over') {
-		return (
-			<SafeAreaView style={styles.resultContainer}>
-				<ThemedView style={styles.gameResult}>
-					<ThemedText type="title">Game Over</ThemedText>
-					<ThemedText>Score: {result?.score}</ThemedText>
+		if (!state.result) {
+			return null;
+		}
 
-					<ThemedText>Best Combo: {result?.bestCombo}</ThemedText>
-
-					<ThemedText>Accuracy: {accuracy}%</ThemedText>
-
-					<ThemedText>Questions: {result?.totalQuestions}</ThemedText>
-				</ThemedView>
-				<TouchableOpacity style={styles.restartButton} onPress={restartGame}>
-					<ThemedText type="default">Play Again</ThemedText>
-				</TouchableOpacity>
-			</SafeAreaView>
-		);
+		return <GameOverScreen result={state.result} onRestart={restartGame} />;
 	}
 
 	if (!state.question) {
@@ -63,19 +50,28 @@ export default function GameScreen() {
 	return (
 		<SafeAreaView style={styles.safeAreaView}>
 			<ThemedView style={styles.container}>
-				<GameHeader score={state.score} lives={state.lives} />
+				<ThemedView style={styles.headerContainer}>
+					<GameHeader score={state.score} lives={state.lives} />
+					<ThemedText style={styles.highScore}>🏆 {highScore}</ThemedText>
+					<ComboDisplay combo={state.combo} />
+				</ThemedView>
 
 				<GameTimer remainingTimeMs={remainingTimeMs} status={state.status} />
 
 				<QuestionCard expression={state.question.expression} />
+
+				{scoreFeedback && (
+					<ScoreFeedback
+						score={scoreFeedback.score}
+						combo={scoreFeedback.combo}
+					/>
+				)}
 
 				<AnswerGrid
 					options={state.question.options}
 					onAnswer={submitAnswer}
 					feedback={answerFeedback}
 				/>
-
-				<ComboDisplay combo={state.combo} />
 			</ThemedView>
 		</SafeAreaView>
 	);
@@ -84,6 +80,12 @@ export default function GameScreen() {
 const styles = StyleSheet.create({
 	safeAreaView: {
 		flex: 1,
+	},
+
+	highScore: {
+		fontSize: 24,
+		fontWeight: 'bold',
+		color: '#FFD700',
 	},
 
 	gameResult: {
@@ -105,6 +107,11 @@ const styles = StyleSheet.create({
 		flex: 1,
 		padding: Spacing.four,
 		justifyContent: 'space-between',
+		gap: 16,
+	},
+
+	headerContainer: {
+		gap: 16,
 	},
 
 	header: {

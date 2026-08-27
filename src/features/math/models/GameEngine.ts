@@ -1,5 +1,5 @@
 import { GAME_CONFIG } from '../constants/GameConfigs';
-import { GameState } from '../types';
+import { AnswerResult, GameState } from '../types';
 import { AnswerValidator } from './AnswerValidator';
 import { QuestionGenerator } from './QuestionGenerator';
 import { ScoreManager } from './ScoreManager';
@@ -46,24 +46,31 @@ export class GameEngine {
 		this.questionStartedAt = Date.now();
 	}
 
-	submitAnswer(answer: number): boolean {
+	submitAnswer(answer: number): AnswerResult {
 		if (this.state.status !== 'playing' || !this.state.question) {
-			return false;
+			return {
+				correct: false,
+				earnedScore: 0,
+			};
 		}
 
 		if (this.isTimeExpired()) {
 			this.submitTimeout();
-			return false;
+
+			return {
+				correct: false,
+				earnedScore: 0,
+			};
 		}
 
 		const correct = this.answerValidator.validate(this.state.question, answer);
 
+		let earnedScore = 0;
+
 		this.state.totalQuestions += 1;
 
 		if (correct) {
-			const earnedScore = this.scoreManager.calculateCorrectScore(
-				this.state.combo,
-			);
+			earnedScore = this.scoreManager.calculateCorrectScore(this.state.combo);
 
 			this.state.score += earnedScore;
 			this.state.combo += 1;
@@ -86,7 +93,10 @@ export class GameEngine {
 			this.finishGame();
 		}
 
-		return correct;
+		return {
+			correct,
+			earnedScore,
+		};
 	}
 
 	getRemainingTimeMs(): number {

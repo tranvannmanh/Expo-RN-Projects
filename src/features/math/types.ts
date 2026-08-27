@@ -35,3 +35,8 @@ export type GameResult = {
 	totalQuestions: number;
 	correctAnswers: number;
 };
+
+export type AnswerResult = {
+	correct: boolean;
+	earnedScore: number;
+};

@@ -1,7 +1,8 @@
+import { AnimatedThemedText } from '@/components';
 import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 
-import Animated, {
+import {
 	useAnimatedStyle,
 	useSharedValue,
 	withRepeat,
@@ -34,7 +35,7 @@ export function GameTimer({ remainingTimeMs, status }: GameTimerProps) {
 
 		scale.value = withRepeat(
 			withSequence(
-				withTiming(1.15, {
+				withTiming(1.2, {
 					duration: 250,
 				}),
 				withTiming(1, {
@@ -59,7 +60,7 @@ export function GameTimer({ remainingTimeMs, status }: GameTimerProps) {
 	}));
 
 	return (
-		<Animated.Text
+		<AnimatedThemedText
 			style={[
 				styles.timer,
 				isWarning && styles.warning,
@@ -68,23 +69,25 @@ export function GameTimer({ remainingTimeMs, status }: GameTimerProps) {
 			]}
 		>
 			{seconds}
-		</Animated.Text>
+		</AnimatedThemedText>
 	);
 }
 
 const styles = StyleSheet.create({
 	timer: {
-		fontSize: 32,
-		fontWeight: '800',
+		fontSize: 18,
+		fontWeight: '400',
 		textAlign: 'center',
-		color: 'white',
 	},
 
 	warning: {
 		// giữ style cơ bản ở đây
+		color: 'yellow',
+		fontWeight: '600',
 	},
 
 	critical: {
 		fontWeight: '900',
+		color: 'red',
 	},
 });

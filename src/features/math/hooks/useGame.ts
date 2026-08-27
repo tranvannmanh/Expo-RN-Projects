@@ -1,17 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameEngine } from '../models/GameEngine';
+import { HighScoreManager } from '../services';
 import { GameState } from '../types';
 import { hapticCorrect, hapticTimeout, hapticWrong } from '../utils/haptics';
 
 export function useGame() {
-	const engineRef = useRef<GameEngine | null>(null);
+	const engineRef = useRef<GameEngine>(new GameEngine());
+	const highScoreManagerRef = useRef<HighScoreManager>(new HighScoreManager());
 	const timeoutHandledRef = useRef(false);
-	if (!engineRef.current) {
-		engineRef.current = new GameEngine();
-	}
 
 	const engine = engineRef.current;
+	const highScoreManager = highScoreManagerRef.current;
 
+	const [highScore, setHighScore] = useState(() =>
+		highScoreManager.getHighScore(),
+	);
+	const [isNewHighScore, setIsNewHighScore] = useState(false);
+	const [scoreFeedback, setScoreFeedback] = useState<{
+		score: number;
+		combo: number;
+	} | null>(null);
 	const [state, setState] = useState<GameState>(() => engine.getState());
 	const [remainingTimeMs, setRemainingTimeMs] = useState(0);
 	const [answerFeedback, setAnswerFeedback] = useState<{
@@ -28,12 +36,23 @@ export function useGame() {
 			const remaining = engine.getRemainingTimeMs();
 			if (remaining <= 0) {
 				engine.submitTimeout();
-				if (!timeoutHandledRef.current) {
+
+				const nextState = engine.getState();
+
+				if (nextState.status === 'game_over') {
+					const newHighScore = highScoreManager.saveIfHigher(nextState.score);
+
+					if (newHighScore) {
+						setHighScore(nextState.score);
+						setIsNewHighScore(true);
+					}
+
 					hapticTimeout();
-					timeoutHandledRef.current = true;
 				}
-				setState(engine.getState());
+
+				setState(nextState);
 				setRemainingTimeMs(0);
+
 				return;
 			}
 			setRemainingTimeMs(remaining);
@@ -57,23 +76,40 @@ export function useGame() {
 
 	const submitAnswer = useCallback(
 		(answer: number) => {
-			const correct = engine.submitAnswer(answer);
+			const result = engine.submitAnswer(answer);
 
-			if (correct) {
+			const nextState = engine.getState();
+
+			if (result.correct) {
+				setScoreFeedback({
+					score: result.earnedScore,
+					combo: nextState.combo,
+				});
+
 				hapticCorrect();
 			} else {
+				setScoreFeedback(null);
+
 				hapticWrong();
 			}
 
 			setAnswerFeedback({
 				answer,
-				result: correct ? 'correct' : 'wrong',
+				result: result.correct ? 'correct' : 'wrong',
 			});
 
-			setState(engine.getState());
+			setState(nextState);
 
-			if (engine.getState().status === 'game_over') {
+			if (nextState.status === 'game_over') {
+				const newHighScore = highScoreManager.saveIfHigher(nextState.score);
+
+				if (newHighScore) {
+					setHighScore(nextState.score);
+					setIsNewHighScore(true);
+				}
+
 				setTimeout(() => {
+					setScoreFeedback(null);
 					setAnswerFeedback(null);
 				}, 400);
 
@@ -83,11 +119,13 @@ export function useGame() {
 			setTimeout(() => {
 				engine.nextQuestion();
 
+				setScoreFeedback(null);
 				setAnswerFeedback(null);
+
 				setState(engine.getState());
 			}, 400);
 		},
-		[engine],
+		[engine, highScoreManager],
 	);
 
 	const restartGame = useCallback(() => {
@@ -98,11 +136,19 @@ export function useGame() {
 	}, [engine]);
 
 	return {
+		// main game states
 		state,
 		startGame,
 		submitAnswer,
 		restartGame,
 		remainingTimeMs,
+
+		// feedback on answers and score
 		answerFeedback,
+		scoreFeedback,
+
+		// high score states
+		highScore,
+		setIsNewHighScore,
 	};
 }
