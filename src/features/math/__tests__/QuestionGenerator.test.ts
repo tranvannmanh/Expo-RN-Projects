@@ -30,3 +30,37 @@ describe('QuestionGenerator', () => {
 		}
 	});
 });
+
+describe('difficulty', () => {
+	it('should generate difficulty 1 question', () => {
+		const generator = new QuestionGenerator();
+
+		const question = generator.generate(1);
+
+		expect(question.difficulty).toBe(1);
+	});
+
+	it('should generate difficulty 2 question', () => {
+		const generator = new QuestionGenerator();
+
+		const question = generator.generate(2);
+
+		expect(question.difficulty).toBe(2);
+	});
+
+	it('should generate difficulty 3 question', () => {
+		const generator = new QuestionGenerator();
+
+		const question = generator.generate(3);
+
+		expect(question.difficulty).toBe(3);
+	});
+
+	it('should generate difficulty 4 question', () => {
+		const generator = new QuestionGenerator();
+
+		const question = generator.generate(4);
+
+		expect(question.difficulty).toBe(4);
+	});
+});

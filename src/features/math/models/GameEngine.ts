@@ -4,7 +4,6 @@ import { AnswerValidator } from './AnswerValidator';
 import { QuestionGenerator } from './QuestionGenerator';
 import { ScoreManager } from './ScoreManager';
 
-const DIFF_LEVEL = 1;
 export class GameEngine {
 	private readonly questionGenerator: QuestionGenerator;
 	private readonly answerValidator: AnswerValidator;
@@ -28,6 +27,7 @@ export class GameEngine {
 			totalQuestions: 0,
 			correctAnswers: 0,
 			result: null,
+			difficulty: GAME_CONFIG.difficulty.initial,
 		};
 	}
 
@@ -37,12 +37,14 @@ export class GameEngine {
 			score: 0,
 			combo: 0,
 			lives: GAME_CONFIG.initialLives,
-			question: this.questionGenerator.generate(DIFF_LEVEL),
+			question: this.questionGenerator.generate(GAME_CONFIG.difficulty.initial),
 			bestCombo: 0,
 			totalQuestions: 0,
 			correctAnswers: 0,
 			result: null,
+			difficulty: GAME_CONFIG.difficulty.initial,
 		};
+
 		this.questionStartedAt = Date.now();
 	}
 
@@ -70,27 +72,27 @@ export class GameEngine {
 		this.state.totalQuestions += 1;
 
 		if (correct) {
-			earnedScore = this.scoreManager.calculateCorrectScore(this.state.combo);
-
+			earnedScore = this.scoreManager.calculateCorrectScore(
+				this.state.combo,
+				this.state.difficulty,
+			);
+			// Tăng điểm và combo
 			this.state.score += earnedScore;
 			this.state.combo += 1;
 			this.state.correctAnswers += 1;
-
+			// Tính best combo
 			this.state.bestCombo = Math.max(this.state.bestCombo, this.state.combo);
 		} else {
 			this.state.lives -= 1;
 			this.state.combo = 0;
 		}
 
-		this.state.result = {
-			score: this.state.score,
-			bestCombo: this.state.bestCombo,
-			totalQuestions: this.state.totalQuestions,
-			correctAnswers: this.state.correctAnswers,
-		};
+		this.updateResult();
 
 		if (this.state.lives <= 0) {
 			this.finishGame();
+		} else {
+			this.generateNextQuestion();
 		}
 
 		return {
@@ -99,11 +101,76 @@ export class GameEngine {
 		};
 	}
 
+	submitTimeout(): void {
+		if (this.state.status !== 'playing') {
+			return;
+		}
+
+		this.state.totalQuestions += 1;
+		this.state.combo = 0;
+		this.state.lives -= 1;
+
+		this.updateResult();
+
+		if (this.state.lives <= 0) {
+			this.finishGame();
+			return;
+		}
+
+		this.generateNextQuestion();
+	}
+
+	private updateResult(): void {
+		this.state.result = {
+			score: this.state.score,
+			bestCombo: this.state.bestCombo,
+			totalQuestions: this.state.totalQuestions,
+			correctAnswers: this.state.correctAnswers,
+		};
+	}
+
+	private generateNextQuestion(): void {
+		const difficulty = this.getCurrentDifficulty();
+
+		this.state.difficulty = difficulty;
+		this.state.question = this.questionGenerator.generate(difficulty);
+
+		this.questionStartedAt = Date.now();
+	}
+
+	private getCurrentDifficulty(): number {
+		const difficulty =
+			Math.floor(
+				this.state.totalQuestions / GAME_CONFIG.difficulty.questionsPerLevel,
+			) + GAME_CONFIG.difficulty.initial;
+
+		return Math.min(difficulty, GAME_CONFIG.difficulty.max);
+	}
+
+	private finishGame(): void {
+		this.state.status = 'game_over';
+		this.state.question = null;
+
+		this.updateResult();
+
+		this.questionStartedAt = null;
+	}
+
+	nextQuestion(): void {
+		if (this.state.status !== 'playing') {
+			return;
+		}
+
+		this.generateNextQuestion();
+	}
+
 	getRemainingTimeMs(): number {
 		if (this.questionStartedAt === null) {
 			return 0;
 		}
+
 		const elapsed = Date.now() - this.questionStartedAt;
+
 		return Math.max(0, GAME_CONFIG.questionTimeLimitMs - elapsed);
 	}
 
@@ -134,52 +201,9 @@ export class GameEngine {
 			correctAnswers: 0,
 			question: null,
 			result: null,
-		};
-		this.questionStartedAt = null;
-	}
-
-	private finishGame(): void {
-		this.state.status = 'game_over';
-
-		this.state.question = null;
-
-		this.state.result = {
-			score: this.state.score,
-			bestCombo: this.state.bestCombo,
-			totalQuestions: this.state.totalQuestions,
-			correctAnswers: this.state.correctAnswers,
+			difficulty: GAME_CONFIG.difficulty.initial,
 		};
 
 		this.questionStartedAt = null;
-	}
-
-	private generateNextQuestion(): void {
-		this.state.question = this.questionGenerator.generate(DIFF_LEVEL);
-		this.questionStartedAt = Date.now();
-	}
-
-	submitTimeout(): void {
-		if (this.state.status !== 'playing') {
-			return;
-		}
-
-		this.state.totalQuestions += 1;
-		this.state.combo = 0;
-		this.state.lives -= 1;
-
-		if (this.state.lives <= 0) {
-			this.finishGame();
-			return;
-		}
-
-		this.generateNextQuestion();
-	}
-
-	nextQuestion(): void {
-		if (this.state.status !== 'playing') {
-			return;
-		}
-
-		this.generateNextQuestion();
 	}
 }

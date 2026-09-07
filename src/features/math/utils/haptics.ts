@@ -11,3 +11,7 @@ export async function hapticWrong() {
 export async function hapticTimeout() {
 	await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 }
+
+export async function hapticLevelUp() {
+	await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+}

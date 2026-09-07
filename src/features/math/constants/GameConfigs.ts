@@ -6,11 +6,22 @@ export const GAME_CONFIG = {
 	questionTimeLimitMs: 10_000,
 
 	// 100 points for each base correct answer
-	baseScore: 100,
+	score: {
+		base: 100,
+
+		difficultyMultiplier: {
+			1: 1,
+			2: 1.5,
+			3: 2,
+			4: 3,
+		},
+	},
 
 	// game levels
 	difficulty: {
 		initial: 1,
+		max: 4,
+		questionsPerLevel: 10,
 	},
 
 	question: {

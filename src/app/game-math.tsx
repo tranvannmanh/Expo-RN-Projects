@@ -7,9 +7,10 @@ import {
 	GameHeader,
 	GameOverScreen,
 	GameTimer,
+	LevelUpFeedback,
+	QuestionCard,
+	ScoreFeedback,
 } from '@/features/math/components';
-import QuestionCard from '@/features/math/components/QuestionCard';
-import { ScoreFeedback } from '@/features/math/components/ScoreFeedback';
 import { useGame } from '@/features/math/hooks/useGame';
 import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
@@ -25,6 +26,8 @@ export default function GameScreen() {
 		answerFeedback,
 		scoreFeedback,
 		highScore,
+		levelUp,
+		dismissLevelUp,
 	} = useGame();
 
 	useEffect(() => {
@@ -72,6 +75,8 @@ export default function GameScreen() {
 					onAnswer={submitAnswer}
 					feedback={answerFeedback}
 				/>
+				{}
+				<LevelUpFeedback level={levelUp} onComplete={dismissLevelUp} />
 			</ThemedView>
 		</SafeAreaView>
 	);

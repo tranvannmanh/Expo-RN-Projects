@@ -11,22 +11,15 @@ export type GameStatus = 'idle' | 'playing' | 'game_over';
 
 export type GameState = {
 	status: GameStatus;
-
 	score: number;
-
 	combo: number;
-
-	bestCombo: number;
-
 	lives: number;
-
-	totalQuestions: number;
-
-	correctAnswers: number;
-
 	question: Question | null;
-
+	bestCombo: number;
+	totalQuestions: number;
+	correctAnswers: number;
 	result: GameResult | null;
+	difficulty: number;
 };
 
 export type GameResult = {

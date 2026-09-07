@@ -25,7 +25,7 @@ describe('GameEngine', () => {
 
 		const result = game.submitAnswer(question.answer);
 
-		expect(result).toBe(true);
+		expect(result).toEqual({ correct: true, earnedScore: 100 });
 
 		const state = game.getState();
 
@@ -47,12 +47,152 @@ describe('GameEngine', () => {
 
 		const result = game.submitAnswer(wrongAnswer);
 
-		expect(result).toBe(false);
+		expect(result).toEqual({ correct: false, earnedScore: 0 });
 
 		const state = game.getState();
 
 		expect(state.score).toBe(0);
 		expect(state.combo).toBe(0);
 		expect(state.lives).toBe(2);
+	});
+
+	it('should give higher score at higher difficulty', () => {
+		const engine = new GameEngine();
+
+		engine.start();
+
+		// Complete 10 questions → difficulty 2
+		for (let i = 0; i < 10; i++) {
+			const state = engine.getState();
+
+			engine.submitAnswer(state.question!.answer);
+		}
+
+		const stateBeforeLevel2Answer = engine.getState();
+
+		expect(stateBeforeLevel2Answer.difficulty).toBe(2);
+
+		const result = engine.submitAnswer(
+			stateBeforeLevel2Answer.question!.answer,
+		);
+
+		expect(result.correct).toBe(true);
+		expect(result.earnedScore).toBeGreaterThan(100);
+	});
+});
+
+describe('GameEngine - Difficulty Progression', () => {
+	it('should start at difficulty 1', () => {
+		const engine = new GameEngine();
+
+		engine.start();
+
+		const state = engine.getState();
+
+		expect(state.status).toBe('playing');
+		expect(state.difficulty).toBe(1);
+		expect(state.question?.difficulty).toBe(1);
+	});
+
+	it('should increase to difficulty 2 after 10 questions', () => {
+		const engine = new GameEngine();
+
+		engine.start();
+
+		for (let i = 0; i < 10; i++) {
+			const state = engine.getState();
+
+			expect(state.question).not.toBeNull();
+
+			engine.submitAnswer(state.question!.answer);
+		}
+
+		const state = engine.getState();
+
+		expect(state.totalQuestions).toBe(10);
+		expect(state.difficulty).toBe(2);
+		expect(state.question?.difficulty).toBe(2);
+	});
+
+	it('should increase to difficulty 3 after 20 questions', () => {
+		const engine = new GameEngine();
+
+		engine.start();
+
+		for (let i = 0; i < 20; i++) {
+			const state = engine.getState();
+
+			expect(state.question).not.toBeNull();
+
+			engine.submitAnswer(state.question!.answer);
+		}
+
+		const state = engine.getState();
+
+		expect(state.totalQuestions).toBe(20);
+		expect(state.difficulty).toBe(3);
+		expect(state.question?.difficulty).toBe(3);
+	});
+
+	it('should increase to difficulty 4 after 30 questions', () => {
+		const engine = new GameEngine();
+
+		engine.start();
+
+		for (let i = 0; i < 30; i++) {
+			const state = engine.getState();
+
+			expect(state.question).not.toBeNull();
+
+			engine.submitAnswer(state.question!.answer);
+		}
+
+		const state = engine.getState();
+
+		expect(state.totalQuestions).toBe(30);
+		expect(state.difficulty).toBe(4);
+		expect(state.question?.difficulty).toBe(4);
+	});
+
+	it('should not exceed maximum difficulty', () => {
+		const engine = new GameEngine();
+
+		engine.start();
+
+		for (let i = 0; i < 50; i++) {
+			const state = engine.getState();
+
+			expect(state.question).not.toBeNull();
+
+			engine.submitAnswer(state.question!.answer);
+		}
+
+		const state = engine.getState();
+
+		expect(state.totalQuestions).toBe(50);
+		expect(state.difficulty).toBe(4);
+		expect(state.question?.difficulty).toBe(4);
+	});
+
+	it('should reset difficulty to 1 when game is reset', () => {
+		const engine = new GameEngine();
+
+		engine.start();
+
+		for (let i = 0; i < 10; i++) {
+			const state = engine.getState();
+			engine.submitAnswer(state.question!.answer);
+		}
+
+		expect(engine.getState().difficulty).toBe(2);
+
+		engine.reset();
+
+		const state = engine.getState();
+
+		expect(state.status).toBe('idle');
+		expect(state.totalQuestions).toBe(0);
+		expect(state.difficulty).toBe(1);
+		expect(state.question).toBeNull();
 	});
 });

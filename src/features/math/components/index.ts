@@ -4,4 +4,6 @@ export * from './ComboDisplay';
 export * from './GameHeader';
 export { GameOverScreen } from './GameOverScreen';
 export * from './GameTimer';
+export * from './LevelUpFeedback';
 export * from './QuestionCard';
+export * from './ScoreFeedback';

@@ -2,12 +2,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameEngine } from '../models/GameEngine';
 import { HighScoreManager } from '../services';
 import { GameState } from '../types';
-import { hapticCorrect, hapticTimeout, hapticWrong } from '../utils/haptics';
+import {
+	hapticCorrect,
+	hapticLevelUp,
+	hapticTimeout,
+	hapticWrong,
+} from '../utils/haptics';
 
 export function useGame() {
 	const engineRef = useRef<GameEngine>(new GameEngine());
 	const highScoreManagerRef = useRef<HighScoreManager>(new HighScoreManager());
-	const timeoutHandledRef = useRef(false);
 
 	const engine = engineRef.current;
 	const highScoreManager = highScoreManagerRef.current;
@@ -26,6 +30,10 @@ export function useGame() {
 		answer: number;
 		result: 'correct' | 'wrong';
 	} | null>(null);
+
+	// game level
+	const [levelUp, setLevelUp] = useState<number | null>(null);
+	const difficultyRef = useRef(engine.getState().difficulty);
 
 	useEffect(() => {
 		if (state.status !== 'playing') {
@@ -71,14 +79,40 @@ export function useGame() {
 
 	const startGame = useCallback(() => {
 		engine.start();
-		setState(engine.getState());
+
+		const newState = engine.getState();
+
+		difficultyRef.current = newState.difficulty;
+
+		setLevelUp(null);
+		setScoreFeedback(null);
+		setAnswerFeedback(null);
+		setIsNewHighScore(false);
+
+		setState(newState);
 	}, [engine]);
+
+	const dismissLevelUp = useCallback(() => {
+		setLevelUp(null);
+	}, []);
 
 	const submitAnswer = useCallback(
 		(answer: number) => {
+			const previousDifficulty = difficultyRef.current;
+
 			const result = engine.submitAnswer(answer);
 
 			const nextState = engine.getState();
+
+			difficultyRef.current = nextState.difficulty;
+
+			if (
+				nextState.status === 'playing' &&
+				nextState.difficulty > previousDifficulty
+			) {
+				setLevelUp(nextState.difficulty);
+				hapticLevelUp();
+			}
 
 			if (result.correct) {
 				setScoreFeedback({
@@ -117,12 +151,8 @@ export function useGame() {
 			}
 
 			setTimeout(() => {
-				engine.nextQuestion();
-
 				setScoreFeedback(null);
 				setAnswerFeedback(null);
-
-				setState(engine.getState());
 			}, 400);
 		},
 		[engine, highScoreManager],
@@ -131,8 +161,13 @@ export function useGame() {
 	const restartGame = useCallback(() => {
 		engine.reset();
 		engine.start();
-		timeoutHandledRef.current = false; // to enable haptic timeout on next game
-		setState(engine.getState());
+		const newState = engine.getState();
+		difficultyRef.current = newState.difficulty;
+		setLevelUp(null);
+		setScoreFeedback(null);
+		setAnswerFeedback(null);
+		setIsNewHighScore(false);
+		setState(newState);
 	}, [engine]);
 
 	return {
@@ -150,5 +185,9 @@ export function useGame() {
 		// high score states
 		highScore,
 		setIsNewHighScore,
+
+		// level up
+		dismissLevelUp,
+		levelUp,
 	};
 }

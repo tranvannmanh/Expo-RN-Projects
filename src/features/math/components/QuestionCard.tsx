@@ -5,7 +5,7 @@ type QuestionCardProps = {
 	expression: string;
 };
 
-const QuestionCard = ({ expression }: QuestionCardProps) => {
+export const QuestionCard = ({ expression }: QuestionCardProps) => {
 	return (
 		<ThemedView style={styles.container}>
 			<ThemedText style={styles.expression}>{expression}</ThemedText>
