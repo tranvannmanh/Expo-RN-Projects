@@ -9,7 +9,7 @@ import {
   GameTimer,
   LevelUpFeedback,
   QuestionCard,
-  ScoreFeedback,
+  QuestionProgress,
 } from '@/features/math/components';
 import { useGame } from '@/features/math/hooks/useGame';
 import { useEffect } from 'react';
@@ -56,26 +56,29 @@ export default function GameScreen() {
         <ThemedView style={styles.headerContainer}>
           <GameHeader score={state.score} lives={state.lives} />
           <ThemedText style={styles.highScore}>🏆 {highScore}</ThemedText>
-          <ComboDisplay combo={state.combo} />
+          <QuestionProgress
+            level={state.difficulty}
+            totalQuestions={state.totalQuestions}
+          />
         </ThemedView>
-
+        <ComboDisplay combo={state.combo} />
         <GameTimer remainingTimeMs={remainingTimeMs} status={state.status} />
 
         <QuestionCard expression={state.question.expression} />
 
-        {scoreFeedback && (
+        {/* {scoreFeedback && (
           <ScoreFeedback
             score={scoreFeedback.score}
             combo={scoreFeedback.combo}
           />
-        )}
+        )} */}
 
         <AnswerGrid
           options={state.question.options}
           onAnswer={submitAnswer}
           feedback={answerFeedback}
         />
-        {}
+
         <LevelUpFeedback level={levelUp} onComplete={dismissLevelUp} />
       </SafeAreaView>
     </ThemedView>

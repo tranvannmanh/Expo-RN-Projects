@@ -3,11 +3,11 @@ import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 
 import {
-	useAnimatedStyle,
-	useSharedValue,
-	withRepeat,
-	withSequence,
-	withTiming,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
 } from 'react-native-reanimated';
 
 type GameTimerProps = {
