@@ -1,18 +1,23 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { Stack } from 'expo-router';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
-import { AppProviders } from '@/providers/AppProviders';
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function RootLayout() {
   return (
-    <AppProviders>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <AnimatedSplashOverlay />
-        <AppTabs />
-      </ThemeProvider>
-    </AppProviders>
+    <Stack>
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="game/math"
+        options={{
+          title: 'Math Challenge',
+          headerBackTitle: 'Home',
+        }}
+      />
+      <Stack.Screen
+        name="game/tic-tac-toe"
+        options={{
+          title: 'Tic Tac Toe',
+          headerBackTitle: 'Home',
+        }}
+      />
+    </Stack>
   );
 }

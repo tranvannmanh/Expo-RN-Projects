@@ -52,7 +52,7 @@ export default function GameScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeAreaView}>
+      <SafeAreaView style={styles.safeAreaView} edges={['bottom']}>
         <ThemedView style={styles.headerContainer}>
           <GameHeader score={state.score} lives={state.lives} />
           <ThemedText style={styles.highScore}>🏆 {highScore}</ThemedText>

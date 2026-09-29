@@ -1,17 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameEngine } from '../models/GameEngine';
 import { HighScoreManager } from '../services';
+import { StatisticsManager } from '../services/stastistic-manager';
 import { GameState } from '../types';
 import {
-	hapticCorrect,
-	hapticLevelUp,
-	hapticTimeout,
-	hapticWrong,
+  hapticCorrect,
+  hapticLevelUp,
+  hapticTimeout,
+  hapticWrong,
 } from '../utils/haptics';
 
 export function useGame() {
   const engineRef = useRef<GameEngine>(new GameEngine());
   const highScoreManagerRef = useRef<HighScoreManager>(new HighScoreManager());
+  const statisticsManagerRef = useRef<StatisticsManager>(
+    new StatisticsManager(),
+  );
+  const statisticsManager = statisticsManagerRef.current;
 
   const engine = engineRef.current;
   const highScoreManager = highScoreManagerRef.current;
@@ -48,13 +53,7 @@ export function useGame() {
         const nextState = engine.getState();
 
         if (nextState.status === 'game_over') {
-          const newHighScore = highScoreManager.saveIfHigher(nextState.score);
-
-          if (newHighScore) {
-            setHighScore(nextState.score);
-            setIsNewHighScore(true);
-          }
-
+          handleGameOver(nextState);
           hapticTimeout();
         }
 
@@ -96,6 +95,30 @@ export function useGame() {
     setLevelUp(null);
   }, []);
 
+  const handleGameOver = useCallback(
+    (nextState: GameState) => {
+      if (nextState.status !== 'game_over') {
+        return;
+      }
+
+      statisticsManager.recordGame({
+        score: nextState.score,
+        bestCombo: nextState.bestCombo,
+        totalQuestions: nextState.totalQuestions,
+        correctAnswers: nextState.correctAnswers,
+        highestLevel: nextState.difficulty,
+      });
+
+      const newHighScore = highScoreManager.saveIfHigher(nextState.score);
+
+      if (newHighScore) {
+        setHighScore(nextState.score);
+        setIsNewHighScore(true);
+      }
+    },
+    [statisticsManager, highScoreManager],
+  );
+
   const submitAnswer = useCallback(
     (answer: number) => {
       const previousDifficulty = difficultyRef.current;
@@ -133,18 +156,12 @@ export function useGame() {
       });
 
       if (nextState.status === 'game_over') {
-        const newHighScore = highScoreManager.saveIfHigher(nextState.score);
-
-        if (newHighScore) {
-          setHighScore(nextState.score);
-          setIsNewHighScore(true);
-        }
+        handleGameOver(nextState);
 
         setTimeout(() => {
           setScoreFeedback(null);
           setAnswerFeedback(null);
-          setState(nextState);
-        }, 1000);
+        }, 400);
 
         return;
       }
@@ -155,7 +172,7 @@ export function useGame() {
         setState(nextState);
       }, 400);
     },
-    [engine, highScoreManager],
+    [engine, handleGameOver],
   );
 
   const restartGame = useCallback(() => {

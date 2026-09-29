@@ -285,3 +285,36 @@ describe('GameEngine - Dynamic Timer Difficulty', () => {
     expect(remaining).toBeLessThanOrEqual(7_000);
   });
 });
+
+describe('GameEngine - Timeout', () => {
+  it('should decrease life when time expires', () => {
+    const engine = new GameEngine();
+
+    engine.start();
+
+    engine.submitTimeout();
+
+    const state = engine.getState();
+
+    expect(state.totalQuestions).toBe(1);
+    expect(state.lives).toBe(2);
+    expect(state.combo).toBe(0);
+  });
+
+  it('should end the game after three timeouts', () => {
+    const engine = new GameEngine();
+
+    engine.start();
+
+    engine.submitTimeout();
+    engine.submitTimeout();
+    engine.submitTimeout();
+
+    const state = engine.getState();
+
+    expect(state.status).toBe('game_over');
+    expect(state.lives).toBe(0);
+    expect(state.totalQuestions).toBe(3);
+    expect(state.correctAnswers).toBe(0);
+  });
+});
