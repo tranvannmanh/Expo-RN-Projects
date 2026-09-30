@@ -1,7 +1,12 @@
 import { useCallback } from 'react';
-import { Alert, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { Alert, StyleSheet, TouchableOpacity } from 'react-native';
 
-import { ThemedText, ThemedView } from '@/components';
+import {
+  ThemedSafeAreaView,
+  ThemedScrollView,
+  ThemedText,
+  ThemedView,
+} from '@/components';
 import { useFocusEffect } from 'expo-router';
 import { StatisticCard } from '../components/StatisticCard';
 import { useStatistics } from '../hooks/useStatistic';
@@ -34,72 +39,79 @@ export function StatisticsScreen() {
   );
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
-      <ThemedView style={styles.header}>
-        <ThemedText style={styles.title}>📊 Statistics</ThemedText>
-
-        <ThemedText style={styles.subtitle}>Your performance</ThemedText>
-      </ThemedView>
-
-      <ThemedView style={styles.grid}>
-        <StatisticCard
-          icon="🏆"
-          title="Best Score"
-          value={statistics.bestScore}
-        />
-
-        <StatisticCard
-          icon="🔥"
-          title="Best Combo"
-          value={statistics.bestCombo}
-        />
-      </ThemedView>
-
-      <ThemedView style={styles.grid}>
-        <StatisticCard
-          icon="🎯"
-          title="Accuracy"
-          value={`${accuracy.toFixed(1)}%`}
-        />
-
-        <StatisticCard
-          icon="❓"
-          title="Questions"
-          value={statistics.totalQuestions}
-        />
-      </ThemedView>
-
-      <ThemedView style={styles.grid}>
-        <StatisticCard
-          icon="🎮"
-          title="Games Played"
-          value={statistics.gamesPlayed}
-        />
-
-        <StatisticCard
-          icon="📈"
-          title="Highest Level"
-          value={`Level ${statistics.highestLevel}`}
-        />
-      </ThemedView>
-
-      <TouchableOpacity
-        style={styles.resetButton}
-        onPress={handleReset}
-        activeOpacity={0.7}
+    <ThemedSafeAreaView style={styles.safeArea}>
+      <ThemedScrollView
+        showsVerticalScrollIndicator={false}
+        style={styles.content}
       >
-        <ThemedText style={styles.resetText}>Reset Statistics</ThemedText>
-      </TouchableOpacity>
-    </ScrollView>
+        <ThemedView style={styles.header}>
+          <ThemedText style={styles.title}>📊 Statistics</ThemedText>
+
+          <ThemedText style={styles.subtitle}>Your performance</ThemedText>
+        </ThemedView>
+
+        <ThemedView style={styles.grid}>
+          <StatisticCard
+            icon="🏆"
+            title="Best Score"
+            value={statistics.bestScore}
+          />
+
+          <StatisticCard
+            icon="🔥"
+            title="Best Combo"
+            value={statistics.bestCombo}
+          />
+        </ThemedView>
+
+        <ThemedView style={styles.grid}>
+          <StatisticCard
+            icon="🎯"
+            title="Accuracy"
+            value={`${accuracy.toFixed(1)}%`}
+          />
+
+          <StatisticCard
+            icon="❓"
+            title="Questions"
+            value={statistics.totalQuestions}
+          />
+        </ThemedView>
+
+        <ThemedView style={styles.grid}>
+          <StatisticCard
+            icon="🎮"
+            title="Games Played"
+            value={statistics.gamesPlayed}
+          />
+
+          <StatisticCard
+            icon="📈"
+            title="Highest Level"
+            value={`Level ${statistics.highestLevel}`}
+          />
+        </ThemedView>
+
+        <TouchableOpacity
+          style={styles.resetButton}
+          onPress={handleReset}
+          activeOpacity={0.7}
+        >
+          <ThemedText style={styles.resetText}>Reset Statistics</ThemedText>
+        </TouchableOpacity>
+      </ThemedScrollView>
+    </ThemedSafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   content: {
     flexGrow: 1,
     padding: 20,
     paddingBottom: 40,
-    backgroundColor: 'white',
   },
 
   header: {

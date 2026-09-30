@@ -1,5 +1,5 @@
-import { MainMenuScreen } from '@/features/math/screens/MainMenuScreen';
+import { Home } from '@/features/math/screens/Home';
 
 export default function Menu() {
-  return <MainMenuScreen />;
+  return <Home />;
 }

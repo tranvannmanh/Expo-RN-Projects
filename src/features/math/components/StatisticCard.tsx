@@ -9,7 +9,7 @@ type StatisticCardProps = {
 
 export function StatisticCard({ icon, title, value }: StatisticCardProps) {
   return (
-    <ThemedView style={styles.card}>
+    <ThemedView style={styles.card} type="backgroundElement">
       <ThemedText style={styles.icon}>{icon}</ThemedText>
 
       <ThemedText style={styles.value} numberOfLines={1}>
