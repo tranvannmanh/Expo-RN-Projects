@@ -36,7 +36,7 @@ export function Home() {
   };
 
   const handleStatisticsPress = () => {
-    router.push('/statistics');
+    router.push('/game/statistics');
   };
 
   return (

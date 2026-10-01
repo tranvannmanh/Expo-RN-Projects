@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
 	useAnimatedStyle,
 	useSharedValue,
@@ -32,10 +32,7 @@ export function Cell({ value, isWinner, disabled, onPress }: CellProps) {
 	useEffect(() => {
 		if (value) {
 			markScale.value = 0;
-			markScale.value = withSpring(
-				1,
-				// { damping: 10, stiffness: 200 }
-			);
+			markScale.value = withSpring(1);
 		} else {
 			markScale.value = 0;
 		}
@@ -60,12 +57,8 @@ export function Cell({ value, isWinner, disabled, onPress }: CellProps) {
 		transform: [{ scale: markScale.value * winPulse.value }],
 	}));
 
-	const cellBgStyle = useAnimatedStyle(() => ({
-		// backgroundColor: 'rgba(128,128,128,0.5)',
-		backgroundColor:
-			winBg.value > 0
-				? `rgba(${value === 'X' ? '255,107,107' : '78,205,196'}, ${winBg.value * 0.2})`
-				: theme.backgroundElement,
+	const winHighlightStyle = useAnimatedStyle(() => ({
+		opacity: winBg.value * 0.2,
 	}));
 
 	const markColor = value === 'X' ? PLAYER_X_COLOR : PLAYER_O_COLOR;
@@ -79,13 +72,21 @@ export function Cell({ value, isWinner, disabled, onPress }: CellProps) {
 				pressed && !value && !disabled && styles.pressed,
 			]}
 		>
-			<Animated.View style={[styles.cell, cellBgStyle]}>
+			<View style={[styles.cell, { backgroundColor: theme.backgroundElement }]}>
+				<Animated.View
+					pointerEvents="none"
+					style={[
+						StyleSheet.absoluteFill,
+						{ backgroundColor: markColor },
+						winHighlightStyle,
+					]}
+				/>
 				{value && (
 					<Animated.Text style={[styles.mark, { color: markColor }, markStyle]}>
 						{value}
 					</Animated.Text>
 				)}
-			</Animated.View>
+			</View>
 		</Pressable>
 	);
 }

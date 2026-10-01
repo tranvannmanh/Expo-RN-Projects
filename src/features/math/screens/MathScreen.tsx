@@ -5,9 +5,9 @@ import {
   AnswerGrid,
   ComboDisplay,
   GameHeader,
-  GameOverScreen,
   GameTimer,
   LevelUpFeedback,
+  MathOverScreen,
   QuestionCard,
   QuestionProgress,
 } from '@/features/math/components';
@@ -16,7 +16,7 @@ import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function GameScreen() {
+export default function MathScreen() {
   const {
     state,
     startGame,
@@ -39,7 +39,7 @@ export default function GameScreen() {
       return null;
     }
 
-    return <GameOverScreen result={state.result} onRestart={restartGame} />;
+    return <MathOverScreen result={state.result} onRestart={restartGame} />;
   }
 
   if (!state.question) {
@@ -65,13 +65,6 @@ export default function GameScreen() {
         <GameTimer remainingTimeMs={remainingTimeMs} status={state.status} />
 
         <QuestionCard expression={state.question.expression} />
-
-        {/* {scoreFeedback && (
-          <ScoreFeedback
-            score={scoreFeedback.score}
-            combo={scoreFeedback.combo}
-          />
-        )} */}
 
         <AnswerGrid
           options={state.question.options}

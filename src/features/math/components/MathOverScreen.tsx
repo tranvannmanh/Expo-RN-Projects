@@ -1,16 +1,16 @@
 import {
-	AnimatedThemedView,
-	ThemedText,
-	ThemedTouchable,
-	ThemedView,
+  AnimatedThemedView,
+  ThemedText,
+  ThemedTouchable,
+  ThemedView,
 } from '@/components';
 import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import {
-	useAnimatedStyle,
-	useSharedValue,
-	withSpring,
-	withTiming,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 
 type GameOverResult = {
@@ -25,7 +25,7 @@ type GameOverScreenProps = {
   onRestart: () => void;
 };
 
-export function GameOverScreen({ result, onRestart }: GameOverScreenProps) {
+export function MathOverScreen({ result, onRestart }: GameOverScreenProps) {
   const opacity = useSharedValue(0);
   const scale = useSharedValue(0.8);
 
