@@ -77,7 +77,14 @@ export function AnswerButton({
 
         {(isCorrect || isWrong) && (
           <ThemedText
-            style={[styles.feedback, { color: isCorrect ? 'green' : 'red' }]}
+            style={[
+              styles.feedback,
+              {
+                color: isCorrect
+                  ? 'rgba(18, 205, 77, 1)'
+                  : 'rgba(150, 0, 0, 1)',
+              },
+            ]}
           >
             {isCorrect ? '✓' : '💔'}
           </ThemedText>
@@ -104,12 +111,14 @@ const styles = StyleSheet.create({
 
   correct: {
     borderWidth: 2,
-    borderColor: 'rgba(17, 82, 38, 1)',
+    borderColor: 'rgba(18, 205, 77, 1)',
+    backgroundColor: 'rgba(18, 205, 77, 0.4)',
   },
 
   wrong: {
     borderWidth: 2,
     borderColor: 'rgba(150, 0, 0, 1)',
+    backgroundColor: 'rgba(150, 0, 0, 0.4)',
   },
 
   disabled: {
