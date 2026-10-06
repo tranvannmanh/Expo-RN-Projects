@@ -5,33 +5,34 @@ import { useTheme } from '@/hooks/use-theme';
 import Animated from 'react-native-reanimated';
 
 export type ThemedTouchableProps = TouchableOpacityProps & {
-	lightColor?: string;
-	darkColor?: string;
-	type?: ThemeColor;
+  lightColor?: string;
+  darkColor?: string;
+  type?: ThemeColor;
 };
 
-export function ThemedTouchable({
-	style,
-	lightColor,
-	darkColor,
-	type,
-	...otherProps
+export function ThemedTouchableOpacity({
+  style,
+  lightColor,
+  darkColor,
+  type,
+  ...otherProps
 }: ThemedTouchableProps) {
-	const theme = useTheme();
+  const theme = useTheme();
 
-	return (
-		<TouchableOpacity
-			style={[
-				{
-					backgroundColor: theme[type ?? 'background'],
-					borderColor: theme.border,
-				},
-				style,
-			]}
-			{...otherProps}
-		/>
-	);
+  return (
+    <TouchableOpacity
+      style={[
+        {
+          backgroundColor: theme[type ?? 'background'],
+          borderColor: theme.border,
+        },
+        style,
+      ]}
+      {...otherProps}
+    />
+  );
 }
 
-export const AnimatedThemedTouchable =
-	Animated.createAnimatedComponent(ThemedTouchable);
+export const AnimatedThemedTouchable = Animated.createAnimatedComponent(
+  ThemedTouchableOpacity,
+);

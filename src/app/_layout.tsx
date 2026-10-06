@@ -52,6 +52,13 @@ export default function RootLayout() {
             headerBackTitle: 'Home',
           }}
         />
+        <Stack.Screen
+          name="game/schulte"
+          options={{
+            title: 'Schulte Board',
+            headerBackTitle: 'Home',
+          }}
+        />
       </Stack>
     </ThemeProvider>
   );

@@ -28,6 +28,13 @@ const GAMES: GameItem[] = [
     description: 'Classic 3 × 3 strategy game',
     route: '/game/tic-tac-toe',
   },
+  {
+    id: 'schulte',
+    icon: '🔢',
+    title: 'Schulte Board',
+    description: 'Train your visual attention and speed',
+    route: '/game/schulte',
+  },
 ];
 
 export function Home() {

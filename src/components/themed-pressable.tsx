@@ -19,8 +19,6 @@ export function ThemedPressable({
   ...otherProps
 }: ThemedPressableProps) {
   const theme = useTheme();
-  const styleType = typeof style;
-
   return (
     <Pressable
       style={[
@@ -28,7 +26,7 @@ export function ThemedPressable({
           backgroundColor: theme[type ?? 'background'],
           borderColor: theme.border,
         },
-        style,
+        ...(Array.isArray(style) ? style : [style]),
       ]}
       {...otherProps}
     />
