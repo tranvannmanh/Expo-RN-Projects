@@ -61,5 +61,20 @@ export const Spacing = {
   six: 64,
 } as const;
 
+export const Motion = {
+  /** Duration (ms) for theme color transitions */
+  colorDuration: 250,
+  /** Opacity applied to touchables while pressed */
+  pressedOpacity: 0.7,
+  /** Opacity applied to disabled controls */
+  disabledOpacity: 0.5,
+  /** Scale applied to animated buttons while pressed */
+  pressedScale: 0.96,
+  spring: {
+    damping: 15,
+    stiffness: 300,
+  },
+} as const;
+
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
