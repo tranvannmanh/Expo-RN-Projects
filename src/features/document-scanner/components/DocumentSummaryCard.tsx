@@ -9,6 +9,7 @@ import { Spacing } from '@/constants/theme';
 import { ICON_SIZE } from '../constants';
 import type { ScannedDocument } from '../types/document';
 import { formatDocumentDate } from '../utils/documentName';
+import { useT } from '@/shared/i18n';
 
 type DocumentSummaryCardProps = {
   document: ScannedDocument;
@@ -17,7 +18,7 @@ type DocumentSummaryCardProps = {
 };
 
 export function DocumentSummaryCard({ document, disabled, onRename }: DocumentSummaryCardProps) {
-  const pages = document.pageCount === 1 ? '1 page' : `${document.pageCount} pages`;
+  const t = useT();
 
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
@@ -29,7 +30,7 @@ export function DocumentSummaryCard({ document, disabled, onRename }: DocumentSu
           type="backgroundElement"
           pressedType="backgroundSelected"
           accessibilityRole="button"
-          accessibilityLabel="Rename document"
+          accessibilityLabel={t.documents.renameTitle}
           hitSlop={Spacing.two}
           disabled={disabled}
           onPress={onRename}
@@ -39,13 +40,13 @@ export function DocumentSummaryCard({ document, disabled, onRename }: DocumentSu
       </ThemedView>
 
       <ThemedText type="small" themeColor="textSecondary">
-        {pages} · Created {formatDocumentDate(document.createdAt)}
+        {t.documents.summary(document.pageCount, formatDocumentDate(document.createdAt, t.locale))}
       </ThemedText>
 
       <ThemedView type="backgroundSelected" style={styles.chip}>
         <AppIcon ios="doc.richtext" android="picture_as_pdf" size={ICON_SIZE.small} />
         <ThemedText type="small">
-          {document.pdfPath ? 'PDF ready' : 'PDF will be rebuilt on export'}
+          {document.pdfPath ? t.documents.pdfReady : t.documents.pdfStale}
         </ThemedText>
       </ThemedView>
     </ThemedView>

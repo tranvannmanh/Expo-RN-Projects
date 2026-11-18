@@ -7,38 +7,59 @@ import '@/global.css';
 
 import { Platform } from 'react-native';
 
+/**
+ * Palette taken from the launcher icon (assets/launcher.icon): cream #F2EFE8, ink #14171F and
+ * orange #FF6A3D. In light mode the orange is deepened to #C4441B so buttons (white text 5.0:1)
+ * and links on cream (4.4:1) stay readable; dark mode uses the icon orange with ink text (6.3:1).
+ * `danger` is a crimson (hue ≈340°) kept well away from the orange primary (≈15°) so
+ * destructive actions never look like ordinary links.
+ */
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
-    primary: '#208AEF',
-    primaryPressed: '#1A6FC0',
-    onPrimary: '#ffffff',
-    danger: '#D93025',
-    dangerSurface: '#FCE8E6',
+    text: '#14171F',
+    background: '#F2EFE8',
+    backgroundElement: '#E7E2D8',
+    backgroundSelected: '#DAD4C8',
+    textSecondary: '#5C6170',
+    primary: '#C4441B',
+    primaryPressed: '#A63815',
+    onPrimary: '#FFFFFF',
+    danger: '#B3164B',
+    dangerSurface: '#FBE3EA',
     scrim: '#000000',
     onScrim: '#ffffff',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
-    primary: '#3C9BF5',
-    primaryPressed: '#2F7FCC',
-    onPrimary: '#ffffff',
-    danger: '#F28B82',
-    dangerSurface: '#3C1F1E',
+    text: '#F2EFE8',
+    background: '#14171F',
+    backgroundElement: '#20242E',
+    backgroundSelected: '#2C313C',
+    textSecondary: '#A9ACB4',
+    primary: '#FF6A3D',
+    primaryPressed: '#E5582D',
+    onPrimary: '#14171F',
+    danger: '#FF7FA3',
+    dangerSurface: '#3D1A26',
     scrim: '#000000',
     onScrim: '#ffffff',
   },
 } as const;
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
+
+/**
+ * App typeface: Google Sans (SIL OFL 1.1, assets/fonts; official Android static build v14.000,
+ * unmodified). Covers the full Vietnamese alphabet. Embedded at build time by the expo-font
+ * config plugin (app.json), so it works offline.
+ * Available weights: 400 / 500 / 700 — use only these (there is no 600).
+ * Trademark terms (assets/fonts/GoogleSans-TRADEMARKS.md): never use "Google" in the app name
+ * or imply affiliation with Google.
+ */
+export const APP_FONT_FAMILY = Platform.select({
+  ios: 'Google Sans',
+  android: 'GoogleSans',
+  default: 'Google Sans',
+});
 
 export const Fonts = Platform.select({
   ios: {

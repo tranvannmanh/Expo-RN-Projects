@@ -1,31 +1,35 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { ActionButton } from '@/features/document-scanner/components/ActionButton';
+import { ActionButton } from '@/components/action-button';
 import { DocumentSummaryCard } from '@/features/document-scanner/components/DocumentSummaryCard';
 import { PageGrid } from '@/features/document-scanner/components/PageGrid';
-import { PagePreviewModal } from '@/features/document-scanner/components/PagePreviewModal';
 import { PdfActionsCard } from '@/features/document-scanner/components/PdfActionsCard';
-import { RenameDocumentDialog } from '@/features/document-scanner/components/RenameDocumentDialog';
-import { StatusBanner } from '@/features/document-scanner/components/StatusBanner';
+import { RenameDialog } from '@/components/rename-dialog';
+import { StatusBanner } from '@/components/status-banner';
+import { ThemedStackHeader } from '@/components/themed-stack-header';
 import { useDocumentDetailScreen } from '@/features/document-scanner/hooks/useDocumentDetailScreen';
+import { MAX_NAME_LENGTH } from '@/features/document-scanner/services/document.service';
 import { useTheme } from '@/hooks/use-theme';
+import { useT } from '@/shared/i18n';
 
 const SCREEN_PADDING = Spacing.four;
 
 export default function DocumentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const theme = useTheme();
+  const t = useT();
   const screen = useDocumentDetailScreen(id);
   const { document, reorder, exporter } = screen;
 
   return (
     <ThemedView style={styles.root}>
-      <Stack.Screen options={{ title: document?.name ?? 'Document' }} />
+      <ThemedStackHeader title={document?.name ?? t.nav.document} />
       <SafeAreaView edges={['bottom', 'left', 'right']} style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
           {screen.error && <StatusBanner variant="error" error={screen.error} />}
@@ -33,7 +37,7 @@ export default function DocumentDetailScreen() {
           {exporter.notice && <StatusBanner variant="success" message={exporter.notice} />}
           {screen.isLoading && <ActivityIndicator color={theme.text} />}
           {screen.notFound && (
-            <ThemedText themeColor="textSecondary">This document no longer exists.</ThemedText>
+            <ThemedText themeColor="textSecondary">{t.documents.notFound}</ThemedText>
           )}
 
           {document && (
@@ -51,12 +55,15 @@ export default function DocumentDetailScreen() {
                   onShare={exporter.sharePdf}
                   onSaveToDocuments={exporter.savePdfToDocuments}
                   onChooseLocation={exporter.savePdfWithPicker}
+                  onOpenInPdfTools={() =>
+                    exporter.sendToPdfTools((pdfId) =>
+                      router.push({ pathname: '/pdf-tools/[id]', params: { id: pdfId } }),
+                    )
+                  }
                 />
               )}
               <ThemedText type="small" themeColor="textSecondary">
-                {reorder.isReordering
-                  ? 'Use the arrows to move pages, then save the new order.'
-                  : 'Tap a page to preview it.'}
+                {reorder.isReordering ? t.documents.hintReorder : t.documents.hintPreview}
               </ThemedText>
               <PageGrid
                 pages={screen.pages}
@@ -68,11 +75,17 @@ export default function DocumentDetailScreen() {
                         mode: 'reorder',
                         onMoveEarlier: index > 0 ? () => reorder.move(index, -1) : undefined,
                         onMoveLater:
-                          index < screen.pages.length - 1 ? () => reorder.move(index, 1) : undefined,
+                          index < screen.pages.length - 1
+                            ? () => reorder.move(index, 1)
+                            : undefined,
                       }
                     : {
                         mode: 'view',
-                        onPress: () => screen.preview.openPreview(index),
+                        onPress: () =>
+                          router.push({
+                            pathname: '/documents/pages',
+                            params: { id, index: String(index) },
+                          }),
                         onDelete: () => screen.actions.confirmDeletePage(page),
                       }
                 }
@@ -85,19 +98,30 @@ export default function DocumentDetailScreen() {
           <ThemedView style={styles.toolbar}>
             {reorder.isReordering ? (
               <>
-                <ActionButton label="Cancel" icon={{ ios: 'xmark', android: 'close' }} disabled={screen.busy} onPress={reorder.cancel} />
-                <ActionButton label="Save order" variant="primary" icon={{ ios: 'checkmark', android: 'check' }} disabled={screen.busy} onPress={screen.actions.saveOrder} />
+                <ActionButton
+                  label={t.common.cancel}
+                  icon={{ ios: 'xmark', android: 'close' }}
+                  disabled={screen.busy}
+                  onPress={reorder.cancel}
+                />
+                <ActionButton
+                  label={t.documents.saveOrder}
+                  variant="primary"
+                  icon={{ ios: 'checkmark', android: 'check' }}
+                  disabled={screen.busy}
+                  onPress={screen.actions.saveOrder}
+                />
               </>
             ) : (
               <>
                 <ActionButton
-                  label="Reorder"
+                  label={t.documents.reorder}
                   icon={{ ios: 'arrow.left.arrow.right', android: 'swap_horiz' }}
                   disabled={screen.busy || screen.savedPages.length < 2}
                   onPress={reorder.start}
                 />
                 <ActionButton
-                  label={screen.isAddingPages ? 'Scanning…' : 'Add pages'}
+                  label={screen.isAddingPages ? t.documents.scanning : t.documents.addPages}
                   variant="primary"
                   icon={{ ios: 'doc.badge.plus', android: 'add_a_photo' }}
                   disabled={screen.busy}
@@ -109,15 +133,10 @@ export default function DocumentDetailScreen() {
         )}
       </SafeAreaView>
 
-      <PagePreviewModal
-        pages={screen.savedPages}
-        initialIndex={screen.preview.previewIndex}
-        onClose={screen.preview.closePreview}
-        onSharePage={exporter.sharePage}
-        onSavePage={exporter.canSaveToPublicFolder ? exporter.savePage : undefined}
-      />
       {document && (
-        <RenameDocumentDialog
+        <RenameDialog
+          title={t.documents.renameTitle}
+          maxLength={MAX_NAME_LENGTH}
           visible={screen.rename.visible}
           initialName={document.name}
           saving={screen.rename.saving}

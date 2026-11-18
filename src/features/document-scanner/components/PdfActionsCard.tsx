@@ -6,7 +6,8 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-import { ActionButton } from './ActionButton';
+import { ActionButton } from '@/components/action-button';
+import { useT } from '@/shared/i18n';
 
 type PdfActionsCardProps = {
   canSaveToDocuments: boolean;
@@ -15,27 +16,29 @@ type PdfActionsCardProps = {
   onShare: () => void;
   onSaveToDocuments: () => void;
   onChooseLocation: () => void;
+  onOpenInPdfTools: () => void;
 };
 
 export function PdfActionsCard(props: PdfActionsCardProps) {
   const theme = useTheme();
+  const t = useT();
   const disabled = props.disabled || props.busy;
 
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
       <ThemedView type="backgroundElement" style={styles.header}>
-        <ThemedText type="smallBold">PDF</ThemedText>
+        <ThemedText type="smallBold">{t.documents.pdfCardTitle}</ThemedText>
         {props.busy && <ActivityIndicator color={theme.primary} />}
       </ThemedView>
       <ThemedText type="small" themeColor="textSecondary">
         {props.canSaveToDocuments
-          ? 'Share it, or save a copy to Documents/ScannerApp. Your private copy is kept.'
-          : 'Share it, or save a copy to a folder you choose. Your private copy is kept.'}
+          ? t.documents.pdfCardPublic
+          : t.documents.pdfCardPicker}
       </ThemedText>
 
       <ThemedView type="backgroundElement" style={styles.row}>
         <ActionButton
-          label="Share"
+          label={t.common.share}
           variant="tonal"
           icon={{ ios: 'square.and.arrow.up', android: 'share' }}
           disabled={disabled}
@@ -43,7 +46,7 @@ export function PdfActionsCard(props: PdfActionsCardProps) {
         />
         {props.canSaveToDocuments ? (
           <ActionButton
-            label="Save"
+            label={t.common.save}
             variant="primary"
             icon={{ ios: 'square.and.arrow.down', android: 'download' }}
             disabled={disabled}
@@ -51,7 +54,7 @@ export function PdfActionsCard(props: PdfActionsCardProps) {
           />
         ) : (
           <ActionButton
-            label="Save as…"
+            label={t.common.saveAs}
             variant="primary"
             icon={{ ios: 'folder', android: 'folder_open' }}
             disabled={disabled}
@@ -69,10 +72,21 @@ export function PdfActionsCard(props: PdfActionsCardProps) {
           onPress={props.onChooseLocation}
           style={styles.link}>
           <ThemedText type="smallBold" themeColor="primary">
-            Choose another location…
+            {t.documents.chooseAnotherLocation}
           </ThemedText>
         </ThemedPressable>
       )}
+      <ThemedPressable
+        type="backgroundElement"
+        pressedType="backgroundSelected"
+        accessibilityRole="button"
+        disabled={disabled}
+        onPress={props.onOpenInPdfTools}
+        style={styles.link}>
+        <ThemedText type="smallBold" themeColor="primary">
+          {t.documents.openInPdfTools}
+        </ThemedText>
+      </ThemedPressable>
     </ThemedView>
   );
 }

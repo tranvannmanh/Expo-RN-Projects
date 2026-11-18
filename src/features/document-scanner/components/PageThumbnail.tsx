@@ -10,6 +10,7 @@ import { Spacing } from '@/constants/theme';
 
 import { BADGE_OPACITY, ICON_SIZE, PAGE_ASPECT_RATIO } from '../constants';
 import type { PageView } from '../types/document';
+import { useT } from '@/shared/i18n';
 
 export type PageThumbnailActions =
   | { mode: 'view'; onPress: () => void; onDelete?: () => void }
@@ -27,16 +28,17 @@ type PageThumbnailProps = {
 };
 
 export function PageThumbnail({ page, width, disabled, actions }: PageThumbnailProps) {
+  const t = useT();
   const isView = actions.mode === 'view';
 
-  const label = `Page ${page.pageNumber}${page.missing ? ', file missing' : ''}`;
+  const label = page.missing ? t.pages.missingA11y(page.pageNumber) : t.pages.page(page.pageNumber);
   const content = (
     <>
       {page.missing ? (
         <ThemedView type="backgroundSelected" style={styles.missing}>
           <AppIcon ios="exclamationmark.triangle" android="broken_image" size={ICON_SIZE.medium} color="textSecondary" />
           <ThemedText type="small" themeColor="textSecondary">
-            Missing
+            {t.pages.missing}
           </ThemedText>
         </ThemedView>
       ) : (
@@ -52,7 +54,7 @@ export function PageThumbnail({ page, width, disabled, actions }: PageThumbnailP
       {isView && actions.onDelete && (
         <OverlayButton
           style={styles.topRight}
-          label={`Delete page ${page.pageNumber}`}
+          label={t.pages.delete(page.pageNumber)}
           disabled={disabled}
           onPress={actions.onDelete}
           icon={<AppIcon ios="trash" android="delete" size={ICON_SIZE.small} color="onScrim" />}
@@ -62,13 +64,13 @@ export function PageThumbnail({ page, width, disabled, actions }: PageThumbnailP
       {!isView && (
         <ThemedView type="scrim" style={styles.moveBar}>
           <OverlayButton
-            label={`Move page ${page.pageNumber} earlier`}
+            label={t.pages.moveEarlier(page.pageNumber)}
             disabled={disabled || !actions.onMoveEarlier}
             onPress={actions.onMoveEarlier}
             icon={<AppIcon ios="chevron.left" android="chevron_left" size={ICON_SIZE.medium} color="onScrim" />}
           />
           <OverlayButton
-            label={`Move page ${page.pageNumber} later`}
+            label={t.pages.moveLater(page.pageNumber)}
             disabled={disabled || !actions.onMoveLater}
             onPress={actions.onMoveLater}
             icon={<AppIcon ios="chevron.right" android="chevron_right" size={ICON_SIZE.medium} color="onScrim" />}

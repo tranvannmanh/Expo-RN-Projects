@@ -7,18 +7,21 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedTextInput } from '@/components/themed-text-input';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { ActionButton } from '@/features/document-scanner/components/ActionButton';
-import { StatusBanner } from '@/features/document-scanner/components/StatusBanner';
+import { ActionButton } from '@/components/action-button';
+import { StatusBanner } from '@/components/status-banner';
+import { ThemedStackHeader } from '@/components/themed-stack-header';
 import { ScanTips } from '@/features/document-scanner/components/ScanTips';
 import { useScanNewDocument } from '@/features/document-scanner/hooks/useScanNewDocument';
 import { MAX_NAME_LENGTH } from '@/features/document-scanner/services/document.service';
 import { toDocumentError } from '@/features/document-scanner/types/errors';
 import { defaultDocumentName } from '@/features/document-scanner/utils/documentName';
 import { useTheme } from '@/hooks/use-theme';
+import { useT } from '@/shared/i18n';
 
 export default function ScanScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const t = useT();
   const scan = useScanNewDocument();
   const [placeholder] = useState(() => defaultDocumentName(new Date()));
   const [name, setName] = useState('');
@@ -32,6 +35,7 @@ export default function ScanScreen() {
 
   return (
     <ThemedView style={styles.root}>
+      <ThemedStackHeader />
       <SafeAreaView edges={['bottom', 'left', 'right']} style={styles.safeArea}>
         <KeyboardAvoidingView behavior="height" style={styles.fill}>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -39,7 +43,7 @@ export default function ScanScreen() {
             {scan.isSuccess && scan.data === null && <StatusBanner variant="cancelled" />}
 
             <ThemedView style={styles.field}>
-              <ThemedText type="smallBold">Document name</ThemedText>
+              <ThemedText type="smallBold">{t.scan.nameLabel}</ThemedText>
               <ThemedTextInput
                 value={name}
                 onChangeText={setName}
@@ -48,11 +52,11 @@ export default function ScanScreen() {
                 editable={!scan.isPending}
                 returnKeyType="go"
                 onSubmitEditing={startScan}
-                accessibilityLabel="Document name"
-                accessibilityHint="Leave empty to use the date as the name"
+                accessibilityLabel={t.scan.nameLabel}
+                accessibilityHint={t.scan.nameA11yHint}
               />
               <ThemedText type="small" themeColor="textSecondary">
-                Leave empty to use the date. You can rename it later.
+                {t.scan.nameHint}
               </ThemedText>
             </ThemedView>
 
@@ -60,7 +64,7 @@ export default function ScanScreen() {
               <ThemedView type="backgroundElement" style={styles.progress}>
                 <ActivityIndicator color={theme.primary} />
                 <ThemedText type="small" style={styles.fill}>
-                  Scanner is open. Finish or cancel the scan there; pages are saved automatically.
+                  {t.scan.inProgress}
                 </ThemedText>
               </ThemedView>
             ) : (
@@ -70,7 +74,7 @@ export default function ScanScreen() {
 
           <ThemedView style={styles.footer}>
             <ActionButton
-              label={scan.isPending ? 'Scanning…' : 'Start scanning'}
+              label={scan.isPending ? t.documents.scanning : t.scan.start}
               variant="primary"
               icon={{ ios: 'doc.viewfinder', android: 'document_scanner' }}
               disabled={scan.isPending}

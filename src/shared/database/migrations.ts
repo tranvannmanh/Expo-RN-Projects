@@ -30,6 +30,22 @@ export const MIGRATIONS: readonly string[] = [
 
   CREATE INDEX idx_documents_created_at ON documents(created_at DESC);
   `,
+  // v2 — PDF Tools: imported PDFs and the results of compress/merge/split/watermark
+  `
+  CREATE TABLE pdf_files (
+    id              TEXT PRIMARY KEY NOT NULL,
+    name            TEXT NOT NULL,
+    path            TEXT NOT NULL UNIQUE,
+    size_bytes      INTEGER NOT NULL,
+    page_count      INTEGER NOT NULL,
+    source          TEXT NOT NULL
+                    CHECK (source IN ('import', 'document', 'compress', 'merge', 'split', 'watermark')),
+    thumbnail_path  TEXT,
+    created_at      INTEGER NOT NULL
+  );
+
+  CREATE INDEX idx_pdf_files_created_at ON pdf_files(created_at DESC);
+  `,
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS.length;

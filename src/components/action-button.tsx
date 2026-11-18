@@ -6,7 +6,8 @@ import { AppIcon } from '@/components/app-icon';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 
-import { ICON_SIZE } from '../constants';
+
+const ICON_SIZE = 24;
 
 type ActionButtonProps = {
   label: string;
@@ -35,7 +36,7 @@ export function ActionButton({ label, icon, variant = 'secondary', disabled, onP
       disabled={disabled}
       onPress={onPress}
       style={styles.button}>
-      <AppIcon ios={icon.ios} android={icon.android} size={ICON_SIZE.medium} color={textColor} />
+      <AppIcon ios={icon.ios} android={icon.android} size={ICON_SIZE} color={textColor} />
       <ThemedText type="smallBold" themeColor={textColor}>
         {label}
       </ThemedText>

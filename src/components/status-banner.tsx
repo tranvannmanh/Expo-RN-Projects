@@ -5,25 +5,28 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 
-import { ICON_SIZE } from '../constants';
-import type { DocumentError } from '../types/errors';
-import { documentErrorMessage } from '../utils/documentErrorMessage';
+import type { AppError } from '@/shared/errors/appError';
+import { useT } from '@/shared/i18n';
+
+const ICON_SIZE = 24;
 
 type StatusBannerProps =
   | { variant: 'cancelled' }
   | { variant: 'success'; message: string }
-  | { variant: 'error'; error: DocumentError };
+  | { variant: 'info'; message: string }
+  | { variant: 'error'; error: AppError };
 
 export function StatusBanner(props: StatusBannerProps) {
+  const t = useT();
   const isError = props.variant === 'error';
   const surface = isError ? 'dangerSurface' : 'backgroundElement';
 
   const message =
     props.variant === 'error'
-      ? documentErrorMessage(props.error.code)
-      : props.variant === 'success'
-        ? props.message
-        : documentErrorMessage('SCAN_CANCELLED');
+      ? t.errors[props.error.code]
+      : props.variant === 'cancelled'
+        ? t.errors.SCAN_CANCELLED
+        : props.message;
 
   return (
     <ThemedView
@@ -34,7 +37,7 @@ export function StatusBanner(props: StatusBannerProps) {
       <AppIcon
         ios={isError ? 'exclamationmark.triangle' : props.variant === 'success' ? 'checkmark.circle' : 'info.circle'}
         android={isError ? 'error' : props.variant === 'success' ? 'check_circle' : 'info'}
-        size={ICON_SIZE.medium}
+        size={ICON_SIZE}
         color={isError ? 'danger' : props.variant === 'success' ? 'primary' : 'textSecondary'}
       />
       <ThemedView type={surface} style={styles.body}>

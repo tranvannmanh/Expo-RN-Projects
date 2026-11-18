@@ -4,13 +4,13 @@ import { Alert } from 'react-native';
 
 import type { PageView } from '../types/document';
 import { toDocumentError } from '../types/errors';
-import { usePagePreview } from './usePagePreview';
 import { usePageReorder } from './usePageReorder';
 import { useDeleteDocument } from './useDeleteDocument';
 import { useDocument } from './useDocument';
 import { useDocumentExport } from './useDocumentExport';
 import { useAddPages, useDeletePage, useRenameDocument, useReorderPages } from './useDocumentMutations';
 import { useDocumentPages } from './useDocumentPages';
+import { getT } from '@/shared/i18n';
 
 /** All state and actions for DocumentDetailScreen; the screen only renders. */
 export function useDocumentDetailScreen(documentId: string) {
@@ -27,7 +27,6 @@ export function useDocumentDetailScreen(documentId: string) {
   const exporter = useDocumentExport(documentId, document.data?.name ?? '');
 
   const reorder = usePageReorder(savedPages);
-  const preview = usePagePreview();
   const [isRenaming, setIsRenaming] = useState(false);
 
   const mutations = [rename, deletePage, reorderPages, addPages, deleteDocument];
@@ -40,15 +39,17 @@ export function useDocumentDetailScreen(documentId: string) {
 
   const confirmDeletePage = (page: PageView) => {
     if (savedPages.length === 1) {
-      Alert.alert('Delete the last page?', 'A document needs at least one page, so the whole document will be deleted.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete document', style: 'destructive', onPress: removeDocument },
+      const t = getT();
+      Alert.alert(t.documents.deleteLastPageTitle, t.documents.deleteLastPageMessage, [
+        { text: t.common.cancel, style: 'cancel' },
+        { text: t.documents.deleteDocument, style: 'destructive', onPress: removeDocument },
       ]);
       return;
     }
-    Alert.alert(`Delete page ${page.pageNumber}?`, 'The page image will be removed from this device.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deletePage.mutate(page.id) },
+    const t = getT();
+    Alert.alert(t.documents.deletePageTitle(page.pageNumber), t.documents.deletePageMessage, [
+      { text: t.common.cancel, style: 'cancel' },
+      { text: t.common.delete, style: 'destructive', onPress: () => deletePage.mutate(page.id) },
     ]);
   };
 
@@ -71,7 +72,6 @@ export function useDocumentDetailScreen(documentId: string) {
     pages: reorder.pages,
     savedPages,
     reorder,
-    preview,
     exporter,
     rename: {
       visible: isRenaming,

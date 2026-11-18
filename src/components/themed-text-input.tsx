@@ -1,6 +1,6 @@
 import { StyleSheet, TextInput, type TextInputProps } from 'react-native';
 
-import { Spacing } from '@/constants/theme';
+import { APP_FONT_FAMILY, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedTextInputProps = TextInputProps & {
@@ -32,6 +32,7 @@ export function ThemedTextInput({ style, invalid, ...rest }: ThemedTextInputProp
 const styles = StyleSheet.create({
   // Same metrics as ThemedText "default" so inputs align with body text.
   input: {
+    fontFamily: APP_FONT_FAMILY,
     fontSize: 16,
     lineHeight: 24,
     borderWidth: StyleSheet.hairlineWidth * 2,

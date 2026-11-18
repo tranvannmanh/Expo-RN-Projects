@@ -124,9 +124,10 @@ const styles = StyleSheet.create({
     height: 128,
     position: 'absolute',
   },
+  // Continues the native splash, so it must match expo-splash-screen's backgroundColor (app.json).
   backgroundSolidColor: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: '#208AEF',
+    backgroundColor: '#F2EFE8',
     zIndex: 1000,
   },
 });

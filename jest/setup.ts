@@ -8,12 +8,26 @@ jest.mock('@modules/document-scanner/src/DocumentScannerModule', () => ({
   default: jest.requireActual('./mocks/nativeScanner').nativeScanner,
 }));
 
+// MMKV needs NitroModules (native); an in-memory store is enough for tests.
+jest.mock('@/shared/services/storage.service', () => {
+  const values = new Map<string, string>();
+  return {
+    StorageService: {
+      set: (key: string, value: string) => void values.set(key, value),
+      get: (key: string) => values.get(key),
+      remove: (key: string) => values.delete(key),
+    },
+  };
+});
+
 jest.mock('expo-sharing', () => ({
   isAvailableAsync: jest.fn(async () => true),
   shareAsync: jest.fn(async () => undefined),
 }));
 
 beforeEach(() => {
+  // Deterministic messages regardless of the machine's locale.
+  jest.requireActual<typeof import('@/shared/i18n')>('@/shared/i18n').useLocaleStore.getState().setPreference('en');
   memoryFs.reset();
   jest.clearAllMocks();
   // mockReset also drops per-test implementations (mockResolvedValue etc.) from earlier tests.

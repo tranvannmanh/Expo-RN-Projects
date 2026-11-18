@@ -7,27 +7,37 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 
 import { ICON_SIZE, ZOOM } from '../constants';
+import { useT } from '@/shared/i18n';
 
 const PERCENT = 100;
 
 type ZoomControlsProps = {
   scale: number;
+  /** Upper zoom limit; defaults to the page viewer's. */
+  max?: number;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onReset: () => void;
 };
 
-export function ZoomControls({ scale, onZoomIn, onZoomOut, onReset }: ZoomControlsProps) {
+export function ZoomControls({
+  scale,
+  max = ZOOM.max,
+  onZoomIn,
+  onZoomOut,
+  onReset,
+}: ZoomControlsProps) {
+  const t = useT();
   const canZoomOut = scale > ZOOM.min;
-  const canZoomIn = scale < ZOOM.max;
+  const canZoomIn = scale < max - 0.01;
 
   return (
-    <ThemedView type="scrim" style={styles.bar}>
+    <ThemedView type="background" style={styles.bar}>
       <ThemedPressable
         type="backgroundSelected"
         pressedType="backgroundElement"
         accessibilityRole="button"
-        accessibilityLabel="Zoom out"
+        accessibilityLabel={t.pages.zoomOut}
         disabled={!canZoomOut}
         onPress={onZoomOut}
         style={styles.iconButton}>
@@ -35,15 +45,15 @@ export function ZoomControls({ scale, onZoomIn, onZoomOut, onReset }: ZoomContro
       </ThemedPressable>
 
       <ThemedPressable
-        type="scrim"
-        pressedType="backgroundSelected"
+        type="background"
+        pressedType="backgroundElement"
         accessibilityRole="button"
-        accessibilityLabel="Reset zoom"
-        accessibilityHint="Fits the page to the screen"
+        accessibilityLabel={t.pages.resetZoom}
+        accessibilityHint={t.pages.resetZoomHint}
         disabled={!canZoomOut}
         onPress={onReset}
         style={styles.label}>
-        <ThemedText type="smallBold" themeColor="onScrim">
+        <ThemedText type="smallBold" themeColor="text">
           {Math.round(scale * PERCENT)}%
         </ThemedText>
       </ThemedPressable>
@@ -52,7 +62,7 @@ export function ZoomControls({ scale, onZoomIn, onZoomOut, onReset }: ZoomContro
         type="backgroundSelected"
         pressedType="backgroundElement"
         accessibilityRole="button"
-        accessibilityLabel="Zoom in"
+        accessibilityLabel={t.pages.zoomIn}
         disabled={!canZoomIn}
         onPress={onZoomIn}
         style={styles.iconButton}>

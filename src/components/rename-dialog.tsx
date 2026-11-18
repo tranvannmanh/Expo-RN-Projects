@@ -6,18 +6,19 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedTextInput } from '@/components/themed-text-input';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useT } from '@/shared/i18n';
 
-import { MAX_NAME_LENGTH } from '../services/document.service';
-
-type RenameDocumentDialogProps = {
+type RenameDialogProps = {
   visible: boolean;
+  title: string;
+  maxLength: number;
   initialName: string;
   saving: boolean;
   onCancel: () => void;
   onSave: (name: string) => void;
 };
 
-export function RenameDocumentDialog(props: RenameDocumentDialogProps) {
+export function RenameDialog(props: RenameDialogProps) {
   return (
     <Modal
       visible={props.visible}
@@ -30,7 +31,8 @@ export function RenameDocumentDialog(props: RenameDocumentDialogProps) {
   );
 }
 
-function DialogBody({ initialName, saving, onCancel, onSave }: RenameDocumentDialogProps) {
+function DialogBody({ title, maxLength, initialName, saving, onCancel, onSave }: RenameDialogProps) {
+  const t = useT();
   const [name, setName] = useState(initialName);
   const isEmpty = name.trim().length === 0;
 
@@ -38,22 +40,22 @@ function DialogBody({ initialName, saving, onCancel, onSave }: RenameDocumentDia
     <KeyboardAvoidingView behavior="padding" style={styles.backdrop}>
       <ThemedView type="scrim" style={[StyleSheet.absoluteFill, styles.scrim]} />
       <ThemedView style={styles.dialog}>
-        <ThemedText type="smallBold">Rename document</ThemedText>
+        <ThemedText type="smallBold">{title}</ThemedText>
         <ThemedTextInput
           value={name}
           onChangeText={setName}
           autoFocus
           selectTextOnFocus
-          maxLength={MAX_NAME_LENGTH}
+          maxLength={maxLength}
           invalid={isEmpty}
           returnKeyType="done"
           onSubmitEditing={() => !isEmpty && onSave(name)}
-          accessibilityLabel="Document name"
+          accessibilityLabel={title}
         />
         <ThemedView style={styles.actions}>
           <ThemedPressable type="background" accessibilityRole="button" onPress={onCancel} style={styles.button}>
             <ThemedText type="smallBold" themeColor="textSecondary">
-              Cancel
+              {t.common.cancel}
             </ThemedText>
           </ThemedPressable>
           <ThemedPressable
@@ -64,7 +66,7 @@ function DialogBody({ initialName, saving, onCancel, onSave }: RenameDocumentDia
             onPress={() => onSave(name)}
             style={styles.button}>
             <ThemedText type="smallBold" themeColor="onPrimary">
-              {saving ? 'Saving…' : 'Save'}
+              {saving ? t.common.saving : t.common.save}
             </ThemedText>
           </ThemedPressable>
         </ThemedView>

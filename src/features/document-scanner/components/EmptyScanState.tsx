@@ -6,8 +6,10 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 
 import { ICON_SIZE } from '../constants';
+import { useT } from '@/shared/i18n';
 
 export function EmptyScanState() {
+  const t = useT();
   return (
     <ThemedView type="backgroundElement" style={styles.container}>
       <AppIcon
@@ -16,9 +18,9 @@ export function EmptyScanState() {
         size={ICON_SIZE.hero}
         color="primary"
       />
-      <ThemedText type="smallBold">No documents yet</ThemedText>
+      <ThemedText type="smallBold">{t.documents.emptyTitle}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary" style={styles.centered}>
-        Tap “Scan document” to create one. Edges are detected automatically and you can import photos from your gallery.
+        {t.documents.emptyBody}
       </ThemedText>
     </ThemedView>
   );

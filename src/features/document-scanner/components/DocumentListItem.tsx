@@ -11,6 +11,7 @@ import { ICON_SIZE, LIST_COVER_WIDTH, PAGE_ASPECT_RATIO } from '../constants';
 import { toFileUri } from '../services/documentFileStorage';
 import type { DocumentSummary } from '../types/document';
 import { formatDocumentDate } from '../utils/documentName';
+import { useT } from '@/shared/i18n';
 
 type DocumentListItemProps = {
   document: DocumentSummary;
@@ -20,7 +21,8 @@ type DocumentListItemProps = {
 };
 
 export function DocumentListItem({ document, disabled, onPress, onDelete }: DocumentListItemProps) {
-  const pages = document.pageCount === 1 ? '1 page' : `${document.pageCount} pages`;
+  const t = useT();
+  const pages = t.common.pages(document.pageCount);
 
   return (
     <ThemedPressable
@@ -46,7 +48,7 @@ export function DocumentListItem({ document, disabled, onPress, onDelete }: Docu
           {document.name}
         </ThemedText>
         <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-          {pages} · {formatDocumentDate(document.createdAt)}
+          {pages} · {formatDocumentDate(document.createdAt, t.locale)}
         </ThemedText>
         {document.pdfPath && (
           <ThemedView type="backgroundSelected" style={styles.chip}>
@@ -60,7 +62,7 @@ export function DocumentListItem({ document, disabled, onPress, onDelete }: Docu
         type="backgroundElement"
         pressedType="dangerSurface"
         accessibilityRole="button"
-        accessibilityLabel={`Delete ${document.name}`}
+        accessibilityLabel={t.documents.deleteItem(document.name)}
         hitSlop={Spacing.two}
         disabled={disabled}
         onPress={onDelete}

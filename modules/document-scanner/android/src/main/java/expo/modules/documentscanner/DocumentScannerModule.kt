@@ -184,7 +184,7 @@ class DocumentScannerModule : Module() {
     mimeType: String,
     collection: String,
   ): Map<String, Any?> = withContext(Dispatchers.IO) {
-    val source = requireDocumentFile(sourceUri, documentsRoot())
+    val source = requireExportableFile(sourceUri)
     val target = PublicCollection.entries.firstOrNull { it.name.equals(collection, ignoreCase = true) }
       ?: throw DocumentScannerException(ScannerErrorCode.EXPORT_ERROR, "Unknown collection: $collection")
     val exported = PublicExporter(context.contentResolver)
@@ -197,7 +197,7 @@ class DocumentScannerModule : Module() {
       throw DocumentScannerException(ScannerErrorCode.EXPORT_IN_PROGRESS, "An export is already in progress")
     }
     try {
-      val source = requireDocumentFile(sourceUri, documentsRoot())
+      val source = requireExportableFile(sourceUri)
       val request = CreateDocumentRequest(safeFileName(fileName), requireMimeType(mimeType))
       val target = withContext(Dispatchers.Main) { createDocumentLauncher.launch(request) }
         ?: return mapOf("cancelled" to true)
@@ -209,6 +209,14 @@ class DocumentScannerModule : Module() {
   }
 
   private fun documentsRoot() = File(context.filesDir, "documents")
+
+  /** Exports may come from scanned documents or from PDF Tools (filesDir/pdf-files). */
+  private fun requireExportableFile(uri: String): File {
+    val roots = listOf(documentsRoot(), File(context.filesDir, "pdf-files"))
+    val attempts = roots.map { root -> runCatching { requireDocumentFile(uri, root) } }
+    attempts.firstNotNullOfOrNull { it.getOrNull() }?.let { return it }
+    throw attempts.first().exceptionOrNull() ?: DocumentScannerException(ScannerErrorCode.FILE_NOT_FOUND, "Not exportable")
+  }
 
   /** Accepts only existing file:// URIs inside `root` (blocks path traversal and foreign files). */
   private fun requireDocumentFile(uriString: String, root: File): File {
