@@ -1985,6 +1985,32 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@shopify/react-native-skia@npm:2.6.2":
+  version: 2.6.2
+  resolution: "@shopify/react-native-skia@npm:2.6.2"
+  dependencies:
+    canvaskit-wasm: "npm:0.41.0"
+    react-native-skia-android: "npm:147.1.0"
+    react-native-skia-apple-ios: "npm:147.1.0"
+    react-native-skia-apple-macos: "npm:147.1.0"
+    react-native-skia-apple-tvos: "npm:147.1.0"
+    react-reconciler: "npm:0.31.0"
+  peerDependencies:
+    react: ">=19.0"
+    react-native: ">=0.78"
+    react-native-reanimated: ">=3.19.1"
+  peerDependenciesMeta:
+    react-native:
+      optional: true
+    react-native-reanimated:
+      optional: true
+  bin:
+    install-skia: scripts/install-libs.js
+    setup-skia-web: scripts/setup-canvaskit.js
+  checksum: 10c0/459e024c6c93737b7cb170813e334e361ae5df17245b4db49733b6b551a310f209c71864d6b28cb5ee5e62283a5f31cd5b5812faa910756ff7ea6ef35629f66f
+  languageName: node
+  linkType: hard
+
 "@sinclair/typebox@npm:^0.27.8":
   version: 0.27.10
   resolution: "@sinclair/typebox@npm:0.27.10"
@@ -2119,6 +2145,13 @@ __metadata:
   version: 1.3.1
   resolution: "@ungap/structured-clone@npm:1.3.1"
   checksum: 10c0/7e75faf93cf12ff07c3d15a9e4d326b68f57d13f7246d9f4df2c1ed1a5cde581f899d397816ba5d5d703a0d7f6219e4408f385160156cf20b4e082721817cc37
+  languageName: node
+  linkType: hard
+
+"@webgpu/types@npm:0.1.21":
+  version: 0.1.21
+  resolution: "@webgpu/types@npm:0.1.21"
+  checksum: 10c0/74de9683b70064aeadcdd31381747650b323e7e2183fb38f90a35f1a79f80ad267c0a2ee5010c264befb3d31ad213dbdffa04897e2808f6b04feff8d66bc53e0
   languageName: node
   linkType: hard
 
@@ -2529,6 +2562,15 @@ __metadata:
   version: 1.0.30001799
   resolution: "caniuse-lite@npm:1.0.30001799"
   checksum: 10c0/f24f9834edc7b60188f368ce44714695c3901bc4acb7f2a977dd9b7b697e39ddc0f9947fad6224a955b789f36a73432cb888d620aa7280d728f582d3bd8927a7
+  languageName: node
+  linkType: hard
+
+"canvaskit-wasm@npm:0.41.0":
+  version: 0.41.0
+  resolution: "canvaskit-wasm@npm:0.41.0"
+  dependencies:
+    "@webgpu/types": "npm:0.1.21"
+  checksum: 10c0/a55eb2cb627f2cdf017e05dba794c35225725af13c223c573ffb04f9f783d16e6c80fa0eb21a712c7b0a56f29dc0a693aee1eee61fe75e2b74e821a10236d8ef
   languageName: node
   linkType: hard
 
@@ -3062,6 +3104,46 @@ __metadata:
   languageName: node
   linkType: hard
 
+"expo-haptics@npm:~56.0.3":
+  version: 56.0.3
+  resolution: "expo-haptics@npm:56.0.3"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/f6d37336ad5c75e9906c42e7c73aa7540cb63f5364971f5f133adab16ad50d98ac04ae017a1ddd279bf5d32acc19208755c4918edabce0b9b83bbb38ffffba6d
+  languageName: node
+  linkType: hard
+
+"expo-image-loader@npm:~56.0.3":
+  version: 56.0.3
+  resolution: "expo-image-loader@npm:56.0.3"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/25a1a7317639cb68f5035a8cecd7a1284e99839adf266dc22893f1c705060581871a9ca0c601ea3692f2f170c1c30c12f8b1b5874233ed3d0a5acc22a7e0937a
+  languageName: node
+  linkType: hard
+
+"expo-image-manipulator@npm:~56.0.26":
+  version: 56.0.26
+  resolution: "expo-image-manipulator@npm:56.0.26"
+  dependencies:
+    expo-image-loader: "npm:~56.0.3"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/812868b75e7ca8328afe1f04d2c4ad3f98a2a1df27004fe9ac2808a43c16827263a90a10be8393f22f9c9ee3b43707208f2f2c6769e029483b514f7379dc3721
+  languageName: node
+  linkType: hard
+
+"expo-image-picker@npm:~56.0.25":
+  version: 56.0.25
+  resolution: "expo-image-picker@npm:56.0.25"
+  dependencies:
+    expo-image-loader: "npm:~56.0.3"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/1f4a527c8aa4ad49ab910c2fd98d5c86e6fc23e1dd58f00f1cb280b0ed8318f79878ceaff0a1f1f28c360ae4e4fd501aca13b1eeeb6cdb0184f702dfe4de545a
+  languageName: node
+  linkType: hard
+
 "expo-image@npm:~56.0.11":
   version: 56.0.11
   resolution: "expo-image@npm:56.0.11"
@@ -3099,6 +3181,16 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 10c0/d623deb203407492c7c8380a2472a4ce54803846a793cdb15915a9f59e170e714a5348d326851eb3c3c904c91e706110b1e9fdea07f2e4292826de8106921981
+  languageName: node
+  linkType: hard
+
+"expo-media-library@npm:~56.0.11":
+  version: 56.0.11
+  resolution: "expo-media-library@npm:56.0.11"
+  peerDependencies:
+    expo: "*"
+    react-native: "*"
+  checksum: 10c0/dc172915f0ed4cace1e183c9fb2fb4be9da503739c30a7da550fffbfc528604b0298048c376c5188aa249ad7d28453c3619cfd444e672874d8d33627e3b340ab
   languageName: node
   linkType: hard
 
@@ -4612,6 +4704,7 @@ __metadata:
   dependencies:
     "@expo/ui": "npm:~56.0.18"
     "@hookform/resolvers": "npm:^5.4.0"
+    "@shopify/react-native-skia": "npm:2.6.2"
     "@tanstack/react-query": "npm:^5.101.0"
     "@types/react": "npm:~19.2.2"
     expo: "npm:~56.0.12"
@@ -4619,8 +4712,12 @@ __metadata:
     expo-device: "npm:~56.0.4"
     expo-font: "npm:~56.0.7"
     expo-glass-effect: "npm:~56.0.4"
+    expo-haptics: "npm:~56.0.3"
     expo-image: "npm:~56.0.11"
+    expo-image-manipulator: "npm:~56.0.26"
+    expo-image-picker: "npm:~56.0.25"
     expo-linking: "npm:~56.0.14"
+    expo-media-library: "npm:~56.0.11"
     expo-router: "npm:~56.2.11"
     expo-splash-screen: "npm:~56.0.10"
     expo-status-bar: "npm:~56.0.4"
@@ -4948,6 +5045,34 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-skia-android@npm:147.1.0":
+  version: 147.1.0
+  resolution: "react-native-skia-android@npm:147.1.0"
+  checksum: 10c0/c2f938db0550fc99095bc01154b6d002b4e841c67ff6350187355c88930e8115add3e0b736bdcbf1db67a368a9314b2ea11f73248bcd15f09926d005b022e019
+  languageName: node
+  linkType: hard
+
+"react-native-skia-apple-ios@npm:147.1.0":
+  version: 147.1.0
+  resolution: "react-native-skia-apple-ios@npm:147.1.0"
+  checksum: 10c0/77f9b49d3db472a64af4aa298160bcee9528022d9830e091be1c0e840ec6e55df94e03bffabee2e8e3e6303b5c4a8101798104850df8a5a681d785f2f6c45c4b
+  languageName: node
+  linkType: hard
+
+"react-native-skia-apple-macos@npm:147.1.0":
+  version: 147.1.0
+  resolution: "react-native-skia-apple-macos@npm:147.1.0"
+  checksum: 10c0/c33843d0b3244bd250508550468d20a51763abc6cf41ea1a3e0893fd63e695a3325cfe4f513340561fbf6515add8bd55d9dd873b1f6ae4a021b6b78fe71d5b57
+  languageName: node
+  linkType: hard
+
+"react-native-skia-apple-tvos@npm:147.1.0":
+  version: 147.1.0
+  resolution: "react-native-skia-apple-tvos@npm:147.1.0"
+  checksum: 10c0/eaf3a8970dc9e49af7221ed4381fc2ac2a61acf68f8d854c26df5836845beceb816dd06c8b4e3aa13940c461c89e115b0b9a97694eeff3a32e9fee3bd9611811
+  languageName: node
+  linkType: hard
+
 "react-native-web@npm:~0.21.0":
   version: 0.21.2
   resolution: "react-native-web@npm:0.21.2"
@@ -5039,6 +5164,17 @@ __metadata:
   bin:
     react-native: cli.js
   checksum: 10c0/365bd8ea2de1a707b753e249f17d9f18d993fd80edf76d4316e133ab6d10d51b9ed6912b952fa2173f56a3b8fbef34f179b686907e7d7c06b6e605fbf1dce895
+  languageName: node
+  linkType: hard
+
+"react-reconciler@npm:0.31.0":
+  version: 0.31.0
+  resolution: "react-reconciler@npm:0.31.0"
+  dependencies:
+    scheduler: "npm:^0.25.0"
+  peerDependencies:
+    react: ^19.0.0
+  checksum: 10c0/97920e1866c7206e200c3920c133c2e85f62a3c54fd9bc4b83c10c558d83d98eb378caab4fe37498e0cc1b1b2665d898627f2ae2537b29c8ab295ec8abc0c580
   languageName: node
   linkType: hard
 
@@ -5249,6 +5385,13 @@ __metadata:
   version: 0.27.0
   resolution: "scheduler@npm:0.27.0"
   checksum: 10c0/4f03048cb05a3c8fddc45813052251eca00688f413a3cee236d984a161da28db28ba71bd11e7a3dd02f7af84ab28d39fb311431d3b3772fed557945beb00c452
+  languageName: node
+  linkType: hard
+
+"scheduler@npm:^0.25.0":
+  version: 0.25.0
+  resolution: "scheduler@npm:0.25.0"
+  checksum: 10c0/a4bb1da406b613ce72c1299db43759526058fdcc413999c3c3e0db8956df7633acf395cb20eb2303b6a65d658d66b6585d344460abaee8080b4aa931f10eaafe
   languageName: node
   linkType: hard
 

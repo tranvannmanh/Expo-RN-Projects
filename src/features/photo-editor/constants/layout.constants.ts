@@ -1,0 +1,26 @@
+/** Fixed dimensions of the editor UI (dp). */
+export const EditorLayout = {
+  headerHeight: 52,
+  toolbarHeight: 64,
+  panelHeight: 248,
+  iconSize: 22,
+  canvasPadding: 16,
+  filmThumbSize: 72,
+  sliderTrackHeight: 3,
+  sliderKnobSize: 18,
+  sliderHitSlop: 14,
+  cropHandleSize: 24,
+  cropHandleHit: 36,
+  cropBorder: 1.5,
+  cropHandleThickness: 4,
+  curvePointRadius: 7,
+  curveStroke: 2,
+  selectedBorder: 2,
+  curveSamples: 96,
+  curveBoxSize: 180,
+  curveGridDivisions: 4,
+  valueFontSize: 13,
+  primaryButtonHeight: 52,
+  /** Normalized distance outside the curve box that removes a dragged point. */
+  curveRemoveDistance: 0.12,
+} as const;
