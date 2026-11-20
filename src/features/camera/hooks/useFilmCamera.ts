@@ -6,12 +6,13 @@ import { useEditorStore } from '@/features/photo-editor';
 
 import { PHOTO_QUALITY, PHOTO_RESOLUTION } from '../constants/camera.constants';
 import { useCameraStore } from '../store/camera.store';
-import type { ExposureParam } from '../types/camera.types';
+import type { CameraPanel } from '../types/camera.types';
 import { useCameraLenses } from './useCameraLenses';
 import { useCapturePhoto } from './useCapturePhoto';
 import { useExposureControl } from './useExposureControl';
 import { useFilmFrameRenderer } from './useFilmFrameRenderer';
 import { useFilmSample } from './useFilmSample';
+import { useFnMenu } from './useFnMenu';
 import { useShutterFlash } from './useShutterFlash';
 
 /** Wires lens, exposure mode, film rendering and capture for the camera screen. */
@@ -24,7 +25,7 @@ export function useFilmCamera() {
   const openPhoto = useEditorStore((s) => s.openPhoto);
 
   const [controller, setController] = useState<CameraController>();
-  const [activeParam, setActiveParam] = useState<ExposureParam | null>(null);
+  const [panel, setPanel] = useState<CameraPanel>('film');
   const lens = useCameraLenses(facing);
   const device = lens.selected?.device;
   const activeController = controller?.device.id === device?.id ? controller : undefined;
@@ -42,8 +43,8 @@ export function useFilmCamera() {
     quality: PHOTO_QUALITY,
   });
   const outputs = useMemo(() => [photoOutput], [photoOutput]);
-  const { sample, onSample } = useFilmSample();
-  const onFrame = useFilmFrameRenderer(filmId, onSample);
+  const sample = useFilmSample();
+  const onFrame = useFilmFrameRenderer(filmId);
   const exposure = useExposureControl(activeController);
   const capture = useCapturePhoto();
   const shutterFlash = useShutterFlash();
@@ -63,13 +64,20 @@ export function useFilmCamera() {
     router.push('/editor');
   };
 
-  const toggleParam = (param: ExposureParam) =>
-    setActiveParam((current) => (current === param ? null : param));
+  // Fn toggles the function grid; from any picker it returns to the presets.
+  const toggleFn = () => setPanel((current) => (current === 'film' ? 'fn' : 'film'));
 
-  const changeMode: typeof exposure.setMode = (mode) => {
-    setActiveParam(null);
-    exposure.setMode(mode);
-  };
+  const fnItems = useFnMenu({
+    mode: exposure.mode,
+    exposure: exposure.exposure,
+    hasFlash,
+    isManual: exposure.isManual,
+    lenses: lens.lenses,
+    lensId: lens.selected?.id ?? null,
+    selectLens: lens.selectLens,
+    remeter: exposure.remeter,
+    openPanel: setPanel,
+  });
 
   return {
     device,
@@ -82,9 +90,11 @@ export function useFilmCamera() {
     isActive,
     hasFlash,
     sample,
-    exposure: { ...exposure, setMode: changeMode },
-    activeParam,
-    toggleParam,
+    exposure,
+    panel,
+    setPanel,
+    toggleFn,
+    fnItems,
     shoot,
     openLastShot,
     lastShot,

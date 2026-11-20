@@ -31,7 +31,7 @@ type FilmCameraViewProps = {
   isActive: boolean;
   shutterFlashStyle: AnimatedStyle<ViewStyle>;
   onController: (controller: CameraController) => void;
-  /** Overlays drawn on top of the preview (readout, lens switch). */
+  /** Overlays drawn on top of the preview (grid, lens switch, info strip). */
   children?: ReactNode;
 };
 
@@ -125,8 +125,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFill,
-    justifyContent: 'space-between',
-    padding: Spacing.three,
+    justifyContent: 'flex-end',
   },
   notice: {
     position: 'absolute',

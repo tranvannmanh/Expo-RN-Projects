@@ -10,6 +10,9 @@ export type CaptureMode = 'auto' | 'p' | 's' | 'm';
 
 export type ExposureParam = 'iso' | 'shutter' | 'ev';
 
+/** What the control area under the viewfinder shows. */
+export type CameraPanel = 'film' | 'fn' | 'mode' | 'filmPicker' | ExposureParam;
+
 /** Sensor exposure: duration in seconds, ISO sensitivity. */
 export type ExposureReading = {
   iso: number;

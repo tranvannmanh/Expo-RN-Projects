@@ -1,34 +1,33 @@
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { EditorColors, Spacing } from '@/constants/theme';
-import { EditorLayout, IconButton, getFilmPreset } from '@/features/photo-editor';
+import { EditorColors, Motion, Spacing } from '@/constants/theme';
+import { EditorLayout, IconButton } from '@/features/photo-editor';
 
-import { FLASH_ICONS } from '../constants/camera.constants';
+import { CAPTURE_MODES } from '../constants/camera.constants';
 import { useCameraStore } from '../store/camera.store';
 
 type CameraHeaderProps = {
-  hasFlash: boolean;
   onClose: () => void;
+  onModePress: () => void;
 };
 
-export function CameraHeader({ hasFlash, onClose }: CameraHeaderProps) {
-  const flashMode = useCameraStore((s) => s.flashMode);
-  const cycleFlash = useCameraStore((s) => s.cycleFlash);
-  const filmName = useCameraStore((s) => getFilmPreset(s.filmId).name);
+const MODE_FONT_SIZE = 30;
+
+/** Close on the left; the shooting mode as a large letter on the right, like Sony. */
+export function CameraHeader({ onClose, onModePress }: CameraHeaderProps) {
+  const mode = useCameraStore((s) => s.mode);
+  const label = CAPTURE_MODES.find((m) => m.id === mode)?.label ?? '';
 
   return (
     <View style={styles.header}>
       <IconButton icon="close" onPress={onClose} />
-      <ThemedText type="smallBold" style={styles.title}>
-        {filmName}
-      </ThemedText>
-      <IconButton
-        icon={FLASH_ICONS[flashMode]}
-        disabled={!hasFlash}
-        active={hasFlash && flashMode !== 'off'}
-        onPress={cycleFlash}
-      />
+      <Pressable
+        hitSlop={Spacing.two}
+        onPress={onModePress}
+        style={({ pressed }) => [styles.mode, pressed && styles.pressed]}>
+        <ThemedText style={styles.modeText}>{label}</ThemedText>
+      </Pressable>
     </View>
   );
 }
@@ -41,7 +40,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.two,
   },
-  title: {
+  mode: {
+    paddingHorizontal: Spacing.two,
+  },
+  modeText: {
     color: EditorColors.text,
+    fontSize: MODE_FONT_SIZE,
+    lineHeight: MODE_FONT_SIZE + Spacing.one,
+    fontWeight: '600',
+  },
+  pressed: {
+    opacity: Motion.pressedOpacity,
   },
 });

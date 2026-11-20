@@ -19,10 +19,6 @@ export const PREVIEW_PIXEL_FORMAT: TargetVideoPixelFormat = 'yuv';
  */
 export const LIVE_FILM_PREVIEW = Device.isDevice;
 
-/** Live frames feed the preset cards; refreshed at most this often (ms). */
-export const SAMPLE_INTERVAL_MS = 1500;
-export const SAMPLE_MAX_EDGE = 176;
-
 export const FLASH_ICONS: Record<FlashMode, AndroidIcon> = {
   off: 'flash_off',
   auto: 'flash_auto',
@@ -31,12 +27,35 @@ export const FLASH_ICONS: Record<FlashMode, AndroidIcon> = {
 
 export const FLASH_ORDER: FlashMode[] = ['off', 'auto', 'on'];
 
-export const CAPTURE_MODES: { id: CaptureMode; label: string }[] = [
-  { id: 'auto', label: 'AUTO' },
-  { id: 'p', label: 'P' },
-  { id: 's', label: 'S' },
-  { id: 'm', label: 'M' },
+export const CAPTURE_MODES: { id: CaptureMode; label: string; name: string; description: string }[] = [
+  {
+    id: 'auto',
+    label: 'AUTO',
+    name: 'Tự động',
+    description: 'Máy tự chọn tốc độ màn trập và ISO. Phù hợp chụp nhanh.',
+  },
+  {
+    id: 'p',
+    label: 'P',
+    name: 'Program',
+    description: 'Máy tự phơi sáng, bạn bù sáng EV để ảnh sáng hoặc tối hơn.',
+  },
+  {
+    id: 's',
+    label: 'S',
+    name: 'Ưu tiên tốc độ',
+    description: 'Bạn chọn tốc độ màn trập và EV, máy tự tính ISO. Nhanh: bắt chuyển động; chậm: vệt mờ.',
+  },
+  {
+    id: 'm',
+    label: 'M',
+    name: 'Thủ công',
+    description: 'Bạn chọn ISO và tốc độ màn trập. Số EV trên khung ngắm báo ảnh sáng (+) hay tối (−) hơn đo sáng.',
+  },
 ];
+
+/** Shown under the mode picker when the camera cannot drive the sensor manually. */
+export const MANUAL_UNSUPPORTED_NOTE = 'Camera này không hỗ trợ chỉnh ISO / tốc độ thủ công nên S và M bị tắt.';
 
 /** Which exposure values the user controls in each mode. */
 export const MODE_PARAMS: Record<CaptureMode, ExposureParam[]> = {
@@ -85,7 +104,13 @@ export const CameraLayout = {
   noticeOpacity: 0.85,
   lensButtonSize: 36,
   pillHeight: 32,
-  pickerHeight: 84,
+  /** Fixed height of the panel under the viewfinder (presets, Fn grid, pickers). */
+  panelHeight: 156,
+  fnTileHeight: 52,
+  fnColumns: 6,
+  fnButtonWidth: 64,
+  fnButtonHeight: 32,
+  gridLineWidth: 1,
   /** Horizontal drag distance (dp) per stop on the dials. */
   dialStepPx: 36,
   dialValueWidth: 84,

@@ -20,6 +20,8 @@ type CameraState = {
   facing: CameraFacing;
   mode: CaptureMode;
   exposure: ExposureSettings;
+  /** Rule-of-thirds overlay on the viewfinder. */
+  showGrid: boolean;
   /** Session only: selected lens option id (null = main lens). */
   lensId: string | null;
   /** Session only: live sensor values. */
@@ -32,6 +34,7 @@ type CameraState = {
   cycleFlash: () => void;
   flipFacing: () => void;
   setMode: (mode: CaptureMode) => void;
+  toggleGrid: () => void;
   setExposure: (patch: Partial<ExposureSettings>) => void;
   setLens: (lensId: string | null) => void;
   setReading: (reading: ExposureReading, isAuto: boolean) => void;
@@ -47,6 +50,7 @@ export const useCameraStore = create<CameraState>()(
       facing: 'back',
       mode: 'auto',
       exposure: DEFAULT_EXPOSURE,
+      showGrid: false,
       lensId: null,
       reading: null,
       metered: null,
@@ -59,6 +63,7 @@ export const useCameraStore = create<CameraState>()(
       flipFacing: () =>
         set((s) => ({ facing: s.facing === 'back' ? 'front' : 'back', lensId: null, metered: null })),
       setMode: (mode) => set({ mode }),
+      toggleGrid: () => set((s) => ({ showGrid: !s.showGrid })),
       setExposure: (patch) => set((s) => ({ exposure: { ...s.exposure, ...patch } })),
       setLens: (lensId) => set({ lensId, metered: null }),
       setReading: (reading, isAuto) =>
@@ -78,6 +83,7 @@ export const useCameraStore = create<CameraState>()(
         facing: s.facing,
         mode: s.mode,
         exposure: s.exposure,
+        showGrid: s.showGrid,
       }),
     },
   ),

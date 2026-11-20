@@ -40,6 +40,8 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignSelf: 'center',
+    // Sits above the exposure info strip.
+    marginBottom: Spacing.six,
     gap: Spacing.two,
     padding: Spacing.one,
     borderRadius: Radius.pill,

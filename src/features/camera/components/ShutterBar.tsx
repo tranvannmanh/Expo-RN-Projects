@@ -1,11 +1,11 @@
 import { Canvas, Image } from '@shopify/react-native-skia';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
+import { ThemedText } from '@/components/themed-text';
+
 import { EditorColors, Motion, Radius, Spacing } from '@/constants/theme';
-import { IconButton } from '@/features/photo-editor';
 
 import { CameraLayout } from '../constants/camera.constants';
-import { useCameraStore } from '../store/camera.store';
 import type { CapturedShot } from '../types/camera.types';
 
 type ShutterBarProps = {
@@ -13,6 +13,9 @@ type ShutterBarProps = {
   isCapturing: boolean;
   /** No camera or permission yet. */
   disabled: boolean;
+  /** Fn menu (or a picker opened from it) is showing. */
+  fnActive: boolean;
+  onFn: () => void;
   onShoot: () => void;
   onOpenLastShot: () => void;
 };
@@ -23,10 +26,11 @@ export function ShutterBar({
   lastShot,
   isCapturing,
   disabled,
+  fnActive,
+  onFn,
   onShoot,
   onOpenLastShot,
 }: ShutterBarProps) {
-  const flipFacing = useCameraStore((s) => s.flipFacing);
   const thumb = lastShot?.thumb;
 
   return (
@@ -56,7 +60,13 @@ export function ShutterBar({
       </Pressable>
 
       <View style={styles.side}>
-        <IconButton icon="flip_camera_android" onPress={flipFacing} />
+        <Pressable
+          onPress={onFn}
+          style={({ pressed }) => [styles.fn, fnActive && styles.fnActive, pressed && styles.pressed]}>
+          <ThemedText type="smallBold" style={fnActive ? styles.fnTextActive : styles.fnText}>
+            Fn
+          </ThemedText>
+        </Pressable>
       </View>
     </View>
   );
@@ -108,7 +118,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   side: {
-    width: THUMB,
+    width: CameraLayout.fnButtonWidth,
     alignItems: 'center',
+  },
+  fn: {
+    width: CameraLayout.fnButtonWidth,
+    height: CameraLayout.fnButtonHeight,
+    borderRadius: Radius.small,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth * 3,
+    borderColor: EditorColors.accent,
+  },
+  fnActive: {
+    backgroundColor: EditorColors.accent,
+  },
+  fnText: {
+    color: EditorColors.accent,
+  },
+  fnTextActive: {
+    color: EditorColors.accentText,
   },
 });

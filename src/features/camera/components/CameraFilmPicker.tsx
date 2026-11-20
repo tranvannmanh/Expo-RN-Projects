@@ -8,7 +8,7 @@ type CameraFilmPickerProps = {
   sample: SkImage | null;
 };
 
-/** Preset cards rendered on a live frame (or the bundled sample scene). */
+/** Preset cards: each film rendered on a static sample scene. */
 export function CameraFilmPicker({ sample }: CameraFilmPickerProps) {
   const filmId = useCameraStore((s) => s.filmId);
   const setFilm = useCameraStore((s) => s.setFilm);
