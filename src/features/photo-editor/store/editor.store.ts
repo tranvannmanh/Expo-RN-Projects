@@ -26,7 +26,8 @@ type EditorState = {
   /** Selected crop aspect option id (session UI state, not part of history). */
   aspectId: string;
 
-  openPhoto: (photo: SourcePhoto) => void;
+  /** Opens a photo with a fresh recipe, optionally pre-filled (e.g. the film used when shooting). */
+  openPhoto: (photo: SourcePhoto, initial?: Partial<EditRecipe>) => void;
   closePhoto: () => void;
   setTool: (tool: EditorTool) => void;
   /** Records the current recipe in history (call before a live change). */
@@ -56,10 +57,10 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
   tool: 'film',
   aspectId: 'free',
 
-  openPhoto: (photo) =>
+  openPhoto: (photo, initial) =>
     set({
       photo,
-      recipe: createDefaultRecipe(),
+      recipe: { ...createDefaultRecipe(), ...initial },
       past: [],
       future: [],
       tool: 'film',

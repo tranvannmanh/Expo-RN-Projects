@@ -50,3 +50,42 @@ export function buildUniforms(adj: Adjustments, options: UniformOptions): PhotoU
     userCurve: options.hasUserCurve ? 1 : 0,
   };
 }
+
+/**
+ * Packs uniforms into the flat float array expected by
+ * `RuntimeEffect.makeShaderWithChildren`, in SkSL declaration order.
+ */
+export function flattenUniforms(u: PhotoUniforms): number[] {
+  'worklet';
+  return [
+    ...u.outSize,
+    u.bypass,
+    u.exposure,
+    u.brightness,
+    u.contrast,
+    u.highlights,
+    u.shadows,
+    u.whites,
+    u.blacks,
+    u.temperature,
+    u.tint,
+    u.saturation,
+    u.vibrance,
+    u.sharpen,
+    u.clarity,
+    u.needLocal,
+    u.detailScale,
+    u.fade,
+    u.vignette,
+    u.grain,
+    u.grainSize,
+    ...u.filmR,
+    ...u.filmG,
+    ...u.filmB,
+    ...u.shadowTint,
+    ...u.highlightTint,
+    u.filmSat,
+    u.filmStrength,
+    u.userCurve,
+  ];
+}

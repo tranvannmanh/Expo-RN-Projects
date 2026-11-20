@@ -1,0 +1,275 @@
+diff --git a/android/src/main/java/com/margelo/nitro/camera/extensions/ExposureTracker.kt b/android/src/main/java/com/margelo/nitro/camera/extensions/ExposureTracker.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..0ae1621e6c37bcb8badce12f0303ce4ae6e45d20
+--- /dev/null
++++ b/android/src/main/java/com/margelo/nitro/camera/extensions/ExposureTracker.kt
+@@ -0,0 +1,54 @@
++package com.margelo.nitro.camera.extensions
++
++import android.content.Context
++import android.hardware.camera2.CameraCaptureSession
++import android.hardware.camera2.CameraCharacteristics
++import android.hardware.camera2.CameraManager
++import android.hardware.camera2.CaptureRequest
++import android.hardware.camera2.CaptureResult
++import android.hardware.camera2.TotalCaptureResult
++import com.margelo.nitro.NitroModules
++
++/**
++ * [Film Studio patch] Records the sensor exposure actually used by the
++ * repeating request, so JS can read live ISO / shutter values (CameraX
++ * does not expose them) and meter for shutter-priority exposure.
++ */
++object ExposureTracker {
++  @Volatile var iso: Int = 0
++    private set
++
++  @Volatile var exposureTimeNs: Long = 0
++    private set
++
++  val callback =
++    object : CameraCaptureSession.CaptureCallback() {
++      override fun onCaptureCompleted(
++        session: CameraCaptureSession,
++        request: CaptureRequest,
++        result: TotalCaptureResult,
++      ) {
++        result.get(CaptureResult.SENSOR_SENSITIVITY)?.let { iso = it }
++        result.get(CaptureResult.SENSOR_EXPOSURE_TIME)?.let { exposureTimeNs = it }
++      }
++    }
++
++  /**
++   * CameraX (camera2-pipe) filters REQUEST_AVAILABLE_CAPABILITIES down to the
++   * capabilities it uses itself, so MANUAL_SENSOR has to be read from the
++   * framework's CameraManager.
++   */
++  fun supportsManualSensor(cameraId: String?): Boolean {
++    val id = cameraId ?: return false
++    val context = NitroModules.applicationContext ?: return false
++    return try {
++      val manager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
++      manager
++        .getCameraCharacteristics(id)
++        .get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)
++        ?.contains(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_SENSOR) == true
++    } catch (_: Exception) {
++      false
++    }
++  }
++}
+diff --git a/android/src/main/java/com/margelo/nitro/camera/hybrids/HybridCameraController.kt b/android/src/main/java/com/margelo/nitro/camera/hybrids/HybridCameraController.kt
+index 337601a7029d7d354a999275e1c1860b271b6fcf..9b75c9d70e51983a4a00a5ef142d096621678b2b 100644
+--- a/android/src/main/java/com/margelo/nitro/camera/hybrids/HybridCameraController.kt
++++ b/android/src/main/java/com/margelo/nitro/camera/hybrids/HybridCameraController.kt
+@@ -2,6 +2,12 @@ package com.margelo.nitro.camera.hybrids
+ 
+ import android.animation.Animator
+ import android.animation.ValueAnimator
++import android.hardware.camera2.CameraCharacteristics
++import android.hardware.camera2.CaptureRequest
++import androidx.camera.camera2.interop.Camera2CameraControl
++import androidx.camera.camera2.interop.CaptureRequestOptions
++import com.margelo.nitro.camera.extensions.ExposureTracker
++import com.margelo.nitro.camera.extensions.cameraCharacteristicsOrNull
+ import androidx.camera.core.Camera
+ import androidx.camera.core.CameraState
+ import androidx.camera.core.FocusMeteringAction
+@@ -77,10 +83,15 @@ class HybridCameraController(
+   override val torchMode: TorchMode
+     get() = TorchMode.fromTorchState(camera.cameraInfo.torchState.value ?: TorchState.OFF)
+ 
+-  override val exposureBias: Double
++  // [Film Studio patch] exposure bias is exposed in EV (index * step), like iOS.
++  private val exposureStep: Double
+     get() =
+-      camera.cameraInfo.exposureState.exposureCompensationIndex
++      camera.cameraInfo.exposureState.exposureCompensationStep
+         .toDouble()
++        .takeIf { it > 0 } ?: 1.0
++
++  override val exposureBias: Double
++    get() = camera.cameraInfo.exposureState.exposureCompensationIndex * exposureStep
+ 
+   override val isLowLightBoostEnabled: Boolean
+     get() = camera.cameraInfo.lowLightBoostState.value != LowLightBoostState.OFF
+@@ -93,7 +104,7 @@ class HybridCameraController(
+   override val focusMode: FocusMode
+     get() = FocusMode.CONTINUOUS_AUTO_FOCUS
+   override val exposureMode: ExposureMode
+-    get() = ExposureMode.CONTINUOUS_AUTO_EXPOSURE
++    get() = if (isExposureManual) ExposureMode.LOCKED else ExposureMode.CONTINUOUS_AUTO_EXPOSURE
+   override val whiteBalanceMode: WhiteBalanceMode
+     get() = WhiteBalanceMode.CONTINUOUS_AUTO_WHITE_BALANCE
+ 
+@@ -201,7 +212,7 @@ class HybridCameraController(
+   override fun setExposureBias(exposure: Double): Promise<Unit> {
+     return Promise.async {
+       camera.cameraControl
+-        .setExposureCompensationIndex(exposure.toInt())
++        .setExposureCompensationIndex(Math.round(exposure / exposureStep).toInt())
+         .await()
+     }
+   }
+@@ -300,35 +311,55 @@ class HybridCameraController(
+     )
+   }
+ 
+-  // TODO: Once CameraX implements locking Exposure to custom duration/ISO, implement this:
++  // [Film Studio patch] Manual exposure through Camera2 interop.
++  // `setExposureLocked(0, 0)` returns to continuous auto exposure.
++  @Volatile private var isExposureManual = false
++  private val characteristics: CameraCharacteristics?
++    get() = camera.cameraInfo.cameraCharacteristicsOrNull
++
+   override val minExposureDuration: Double
+-    get() = 0.0
++    get() = (characteristics?.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE)?.lower ?: 0L) / 1e9
+   override val maxExposureDuration: Double
+-    get() = 0.0
++    get() = (characteristics?.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE)?.upper ?: 0L) / 1e9
+   override val minISO: Double
+-    get() = 0.0
++    get() = (characteristics?.get(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE)?.lower ?: 0).toDouble()
+   override val maxISO: Double
+-    get() = 0.0
++    get() = (characteristics?.get(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE)?.upper ?: 0).toDouble()
+   override val iso: Double
+-    get() = 0.0
++    get() = ExposureTracker.iso.toDouble()
+   override val exposureDuration: Double
+-    get() = 0.0
++    get() = ExposureTracker.exposureTimeNs / 1e9
+ 
+   override fun setExposureLocked(
+     duration: Double,
+     iso: Double,
+   ): Promise<Unit> {
+-    throw Error(
+-      "Locking Exposure to manual duration/ISO values is not yet supported on Android! " +
+-        "You can use Exposure Bias (`setExposureBias(...)`) or AE metering locks (`focusTo(point, { modes: ['AE'], adaptiveness: 'locked' })`) instead.",
+-    )
++    return Promise.async {
++      val control = Camera2CameraControl.from(camera.cameraControl)
++      if (duration <= 0.0 || iso <= 0.0) {
++        isExposureManual = false
++        control.clearCaptureRequestOptions().await()
++        return@async
++      }
++      if (!device.supportsExposureLocking) {
++        throw Error("This camera does not support manual sensor control (MANUAL_SENSOR capability)!")
++      }
++      val exposureNs = (duration * 1e9).toLong()
++      val options =
++        CaptureRequestOptions
++          .Builder()
++          .setCaptureRequestOption(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF)
++          .setCaptureRequestOption(CaptureRequest.SENSOR_EXPOSURE_TIME, exposureNs)
++          .setCaptureRequestOption(CaptureRequest.SENSOR_SENSITIVITY, iso.toInt())
++          .setCaptureRequestOption(CaptureRequest.SENSOR_FRAME_DURATION, exposureNs)
++          .build()
++      isExposureManual = true
++      control.setCaptureRequestOptions(options).await()
++    }
+   }
+ 
+   override fun lockCurrentExposure(): Promise<Unit> {
+-    throw Error(
+-      "Locking Exposure to manual duration/ISO values is not yet supported on Android! " +
+-        "You can use Exposure Bias (`setExposureBias(...)`) or AE metering locks (`focusTo(point, { modes: ['AE'], adaptiveness: 'locked' })`) instead.",
+-    )
++    return setExposureLocked(exposureDuration, iso)
+   }
+ 
+   // TODO: Once CameraX implements locking AWB to custom White Balance Gains, implement this:
+diff --git a/android/src/main/java/com/margelo/nitro/camera/hybrids/inputs/HybridCameraDevice.kt b/android/src/main/java/com/margelo/nitro/camera/hybrids/inputs/HybridCameraDevice.kt
+index a00188fb157f776c8f922311b259bab14cb55265..2ace8de1ebea3423c291673b9bcfa1b00c0a6092 100644
+--- a/android/src/main/java/com/margelo/nitro/camera/hybrids/inputs/HybridCameraDevice.kt
++++ b/android/src/main/java/com/margelo/nitro/camera/hybrids/inputs/HybridCameraDevice.kt
+@@ -24,6 +24,7 @@ import com.margelo.nitro.camera.PixelFormat
+ import com.margelo.nitro.camera.Range
+ import com.margelo.nitro.camera.Size
+ import com.margelo.nitro.camera.TargetStabilizationMode
++import com.margelo.nitro.camera.extensions.ExposureTracker
+ import com.margelo.nitro.camera.extensions.cameraCharacteristicsOrNull
+ import com.margelo.nitro.camera.extensions.cameraIdOrNull
+ import com.margelo.nitro.camera.extensions.contains
+@@ -128,8 +129,9 @@ class HybridCameraDevice(
+   // TODO: CameraX doesn't support manual Focus/Exposure/WB locking...
+   override val supportsFocusLocking: Boolean
+     get() = false
++  // [Film Studio patch] manual exposure via Camera2 interop
+   override val supportsExposureLocking: Boolean
+-    get() = false
++    get() = ExposureTracker.supportsManualSensor(cameraInfo.cameraIdOrNull)
+   override val supportsWhiteBalanceLocking: Boolean
+     get() = false
+ 
+@@ -138,14 +140,16 @@ class HybridCameraDevice(
+ 
+   override val supportsExposureBias: Boolean
+     get() = cameraInfo.exposureState.isExposureCompensationSupported
+-  override val minExposureBias: Double
++  // [Film Studio patch] bias range in EV (index * step)
++  private val exposureStep: Double
+     get() =
+-      cameraInfo.exposureState.exposureCompensationRange.lower
++      cameraInfo.exposureState.exposureCompensationStep
+         .toDouble()
++        .takeIf { it > 0 } ?: 1.0
++  override val minExposureBias: Double
++    get() = cameraInfo.exposureState.exposureCompensationRange.lower * exposureStep
+   override val maxExposureBias: Double
+-    get() =
+-      cameraInfo.exposureState.exposureCompensationRange.upper
+-        .toDouble()
++    get() = cameraInfo.exposureState.exposureCompensationRange.upper * exposureStep
+ 
+   override val supportsSmoothAutoFocus: Boolean
+     get() = false
+diff --git a/android/src/main/java/com/margelo/nitro/camera/hybrids/outputs/HybridFrameOutput.kt b/android/src/main/java/com/margelo/nitro/camera/hybrids/outputs/HybridFrameOutput.kt
+index 41ddfad34b8abcc84f00038f20fe1c4219c665f7..061b71f946f5697daade164811f758e6d7613f9e 100644
+--- a/android/src/main/java/com/margelo/nitro/camera/hybrids/outputs/HybridFrameOutput.kt
++++ b/android/src/main/java/com/margelo/nitro/camera/hybrids/outputs/HybridFrameOutput.kt
+@@ -1,5 +1,8 @@
+ package com.margelo.nitro.camera.hybrids.outputs
+ 
++import androidx.camera.camera2.interop.Camera2Interop
++import com.margelo.nitro.camera.extensions.ExposureTracker
++
+ import androidx.camera.core.ImageAnalysis
+ import androidx.camera.core.resolutionselector.ResolutionSelector
+ import com.margelo.nitro.camera.CameraOrientation
+@@ -67,6 +70,9 @@ class HybridFrameOutput(
+       ImageAnalysis
+         .Builder()
+         .apply {
++          // [Film Studio patch] live ISO / shutter readout
++          Camera2Interop.Extender(this).setSessionCaptureCallback(ExposureTracker.callback)
++
+           // Target Resolution
+           setResolutionSelector(resolutionSelector)
+ 
+diff --git a/android/src/main/java/com/margelo/nitro/camera/hybrids/outputs/HybridPreviewOutput.kt b/android/src/main/java/com/margelo/nitro/camera/hybrids/outputs/HybridPreviewOutput.kt
+index 796005660bfc8705f899b13215e97d79d84a0343..2b08b0118708f6dabdb9e9f5687f490269b45352 100644
+--- a/android/src/main/java/com/margelo/nitro/camera/hybrids/outputs/HybridPreviewOutput.kt
++++ b/android/src/main/java/com/margelo/nitro/camera/hybrids/outputs/HybridPreviewOutput.kt
+@@ -1,5 +1,8 @@
+ package com.margelo.nitro.camera.hybrids.outputs
+ 
++import androidx.camera.camera2.interop.Camera2Interop
++import com.margelo.nitro.camera.extensions.ExposureTracker
++
+ import androidx.camera.core.Preview
+ import com.margelo.nitro.camera.CameraOrientation
+ import com.margelo.nitro.camera.HybridCameraPreviewOutputSpec
+@@ -55,6 +58,9 @@ class HybridPreviewOutput :
+       Preview
+         .Builder()
+         .apply {
++          // [Film Studio patch] live ISO / shutter readout
++          Camera2Interop.Extender(this).setSessionCaptureCallback(ExposureTracker.callback)
++
+           // isMirrored={...}
+           setMirrorMode(mirrorMode.toMirrorMode())
+ 

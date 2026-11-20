@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Film Studio",
+    "name": "Film-Photo Pro",
     "slug": "pers-projects",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -12,16 +12,16 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#141416",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#00A2A2",
+        "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
-        "android.permission.READ_MEDIA_IMAGES"
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.CAMERA"
       ],
       "package": "com.manhfanxipan.persprojects"
     },
@@ -34,7 +34,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#141416",
+          "backgroundColor": "#00A2A2",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "android": {
@@ -47,7 +47,7 @@
         "expo-image-picker",
         {
           "photosPermission": "Ứng dụng cần truy cập thư viện ảnh để chọn ảnh chỉnh sửa.",
-          "cameraPermission": false,
+          "cameraPermission": "Ứng dụng cần dùng camera để chụp ảnh với màu phim.",
           "microphonePermission": false
         }
       ],
@@ -60,6 +60,14 @@
           "granularPermissions": [
             "photo"
           ]
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
         }
       ]
     ],

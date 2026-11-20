@@ -18,6 +18,8 @@ export const Palette = {
   silver: '#E4E4E7',
   snow: '#F2F2F3',
   white: '#FFFFFF',
+  /** Launcher icon background; used only for the splash. */
+  brand: '#00A2A2',
   red: '#C8423F',
   redLight: '#E5605C',
 } as const;
@@ -114,6 +116,7 @@ export const EditorColors = {
   accentText: Palette.black,
   danger: Palette.redLight,
   overlay: 'rgba(11, 11, 12, 0.65)',
+  cardLabel: 'rgba(11, 11, 12, 0.72)',
   grid: 'rgba(255, 255, 255, 0.35)',
   gridFaint: 'rgba(255, 255, 255, 0.12)',
   curveRgb: Palette.white,
