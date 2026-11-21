@@ -1,4 +1,5 @@
 import * as Device from 'expo-device';
+import { Dimensions } from 'react-native';
 import { CommonResolutions, type TargetVideoPixelFormat } from 'react-native-vision-camera';
 
 import type { AndroidIcon } from '@/features/photo-editor';
@@ -26,7 +27,19 @@ export const DEFAULT_ASPECT_ID = '4:3';
 export const getAspectOption = (id: string): AspectOption =>
   ASPECT_OPTIONS.find((a) => a.id === id) ?? ASPECT_OPTIONS[0];
 
-export const PREVIEW_RESOLUTION = CommonResolutions.FHD_4_3;
+/**
+ * Viewfinder frames only need to match the screen (capped at 1080 px wide):
+ * smaller frames keep the per-frame shader + copy cheap on any phone.
+ */
+const PREVIEW_MAX_SHORT_EDGE = 1080;
+const previewShortEdge = Math.min(
+  PREVIEW_MAX_SHORT_EDGE,
+  Math.round(Dimensions.get('screen').width * Dimensions.get('screen').scale),
+);
+export const PREVIEW_RESOLUTION = {
+  width: previewShortEdge,
+  height: Math.round((previewShortEdge * 4) / 3),
+};
 export const PHOTO_RESOLUTION = CommonResolutions.UHD_4_3;
 export const PHOTO_QUALITY = 0.95;
 /**
@@ -34,8 +47,12 @@ export const PHOTO_QUALITY = 0.95;
  * which stays locked to portrait: a shot taken sideways is saved upright landscape.
  */
 export const PHOTO_ORIENTATION_SOURCE = 'device' as const;
-/** YUV is accepted by every CameraX ImageAnalysis pipeline (PRIVATE is not, e.g. on emulators). */
-export const PREVIEW_PIXEL_FORMAT: TargetVideoPixelFormat = 'yuv';
+/**
+ * 'native' (GPU / PRIVATE buffers) is zero-copy into Skia. Some pipelines reject it
+ * (e.g. emulators), so the viewfinder falls back to YUV when the session errors.
+ */
+export const PREVIEW_PIXEL_FORMAT: TargetVideoPixelFormat = Device.isDevice ? 'native' : 'yuv';
+export const FALLBACK_PIXEL_FORMAT: TargetVideoPixelFormat = 'yuv';
 
 /**
  * Emulators cannot map camera HardwareBuffers into Skia textures, so they get the
@@ -100,6 +117,17 @@ export const SHUTTER_STOPS = [
   1 / 8, 1 / 6, 1 / 5, 1 / 4, 0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.3, 1.6, 2, 2.5, 3.2, 4, 5, 6, 8, 10,
   13, 15, 20, 25, 30,
 ];
+
+/**
+ * In S / M the viewfinder never exposes longer than this, so it stays fluid; the
+ * chosen (longer) shutter is only applied for the actual capture. Brightness is
+ * matched with ISO and, past the sensor's max ISO, a shader gain.
+ */
+export const PREVIEW_MAX_SHUTTER_SECONDS = 1 / 30;
+/** How often to check that the sensor has switched to the capture exposure (ms). */
+export const EXPOSURE_SETTLE_POLL_MS = 30;
+/** Relative tolerance when comparing the sensor's exposure to the requested one. */
+export const EXPOSURE_SETTLE_TOLERANCE = 0.1;
 
 /** Longest shutter offered; the sensor's own maximum usually applies first. */
 export const MAX_SHUTTER_SECONDS = 30;

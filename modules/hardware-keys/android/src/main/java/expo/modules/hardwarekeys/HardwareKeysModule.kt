@@ -10,9 +10,8 @@ import expo.modules.kotlin.modules.ModuleDefinition
  * Forwards camera-related hardware keys to JS while enabled:
  * - `focus`   KEYCODE_FOCUS  (half-press of a two-stage shutter, e.g. Sony Xperia)
  * - `shutter` KEYCODE_CAMERA (full press)
- * - `volume`  volume up / down (common shutter shortcut)
  *
- * Keys are consumed only while enabled, so volume works normally elsewhere.
+ * Keys are consumed only while enabled. Volume keys are never intercepted.
  * Interception wraps the Activity's Window.Callback; no MainActivity changes.
  */
 class HardwareKeysModule : Module() {
@@ -59,7 +58,6 @@ class HardwareKeysModule : Module() {
     val key = when (event.keyCode) {
       KeyEvent.KEYCODE_FOCUS -> "focus"
       KeyEvent.KEYCODE_CAMERA -> "shutter"
-      KeyEvent.KEYCODE_VOLUME_UP, KeyEvent.KEYCODE_VOLUME_DOWN -> "volume"
       else -> return false
     }
     val action = when (event.action) {

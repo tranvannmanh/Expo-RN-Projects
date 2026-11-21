@@ -18,6 +18,9 @@ type FilmStripProps = {
 const CARD_WIDTH = EditorLayout.filmCardWidth + EditorLayout.selectedBorder * 2;
 const ITEM_SPAN = CARD_WIDTH + Spacing.two;
 const ARROW_SIZE = EditorLayout.iconSize;
+/** Cards mounted up front; the rest render as they scroll near (each is a Skia canvas). */
+const VISIBLE_CARDS = 6;
+const WINDOW_SIZE = 3;
 
 /** Horizontal preset carousel with ◀ ▶ buttons that step through the films. */
 /** Scroll offset that centers item `index` in a list of the given width. */
@@ -63,7 +66,9 @@ export function FilmStrip({ image, selectedId, onSelect }: FilmStripProps) {
         keyExtractor={(item) => item.id}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.list}
-        initialNumToRender={FILM_PRESETS.length}
+        initialNumToRender={VISIBLE_CARDS}
+        windowSize={WINDOW_SIZE}
+        removeClippedSubviews
         onLayout={onLayout}
         getItemLayout={(_, i) => ({ length: ITEM_SPAN, offset: ITEM_SPAN * i, index: i })}
         renderItem={({ item }) => (

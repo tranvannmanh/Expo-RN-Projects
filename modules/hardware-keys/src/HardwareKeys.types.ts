@@ -1,4 +1,4 @@
-export type HardwareKey = 'focus' | 'shutter' | 'volume';
+export type HardwareKey = 'focus' | 'shutter';
 
 export type HardwareKeyEvent = {
   key: HardwareKey;

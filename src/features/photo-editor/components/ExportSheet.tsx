@@ -1,4 +1,5 @@
 import { ActivityIndicator, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { EditorColors, Motion, Radius, Spacing } from '@/constants/theme';
@@ -39,9 +40,16 @@ export function ExportSheet({ visible, onClose }: ExportSheetProps) {
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      statusBarTranslucent
+      navigationBarTranslucent
+      onRequestClose={close}>
       <Pressable style={styles.backdrop} onPress={close} />
-      <View style={styles.sheet}>
+      {/* Bottom inset keeps the save button above the system navigation bar. */}
+      <SafeAreaView edges={['bottom']} style={styles.sheet}>
         <ThemedText type="smallBold" style={styles.title}>
           Lưu ảnh
         </ThemedText>
@@ -97,7 +105,7 @@ export function ExportSheet({ visible, onClose }: ExportSheetProps) {
             </ThemedText>
           )}
         </Pressable>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }

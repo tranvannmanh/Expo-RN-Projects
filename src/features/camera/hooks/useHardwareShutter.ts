@@ -5,13 +5,13 @@ type HardwareShutterOptions = {
   enabled: boolean;
   /** Half-press of a two-stage shutter key (Xperia): focus / meter. */
   onHalfPress: () => void;
-  /** Full press of the camera key, or a volume key: take the photo. */
+  /** Full press of the camera key: take the photo. */
   onShutter: () => void;
 };
 
 /**
- * Physical shutter support while the camera screen is active. The native side
- * only swallows these keys while enabled, so volume keys behave normally elsewhere.
+ * Physical shutter key support (e.g. Sony Xperia two-stage shutter) while the
+ * camera screen is active. Volume keys are left to the system.
  */
 export function useHardwareShutter({ enabled, onHalfPress, onShutter }: HardwareShutterOptions) {
   const handleHalfPress = useEffectEvent(onHalfPress);
@@ -23,7 +23,7 @@ export function useHardwareShutter({ enabled, onHalfPress, onShutter }: Hardware
     const subscription = HardwareKeys.addListener('onKey', ({ key, action }) => {
       if (action !== 'down') return;
       if (key === 'focus') handleHalfPress();
-      else handleShutter();
+      else if (key === 'shutter') handleShutter();
     });
     return () => {
       subscription.remove();

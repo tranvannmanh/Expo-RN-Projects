@@ -9,6 +9,7 @@ import type {
   CameraFacing,
   CapturedShot,
   CaptureProgress,
+  CaptureTimings,
   CaptureMode,
   ExposureReading,
   ExposureSettings,
@@ -30,10 +31,16 @@ type CameraState = {
   reading: ExposureReading | null;
   /** Session only: last auto-exposure reading, the reference for S / M metering. */
   metered: ExposureReading | null;
+  /** Session only: exposure the next S / M capture will use (the viewfinder runs faster). */
+  manualExposure: ExposureReading | null;
   /** Session only: the most recent capture (not persisted). */
   lastShot: CapturedShot | null;
   /** Session only: long-exposure progress, null when not shown. */
   captureProgress: CaptureProgress | null;
+  /** Performance HUD over the viewfinder (debugging aid). */
+  showPerfHud: boolean;
+  /** Session only: stage timings of the last capture. */
+  lastTimings: CaptureTimings | null;
   setFilm: (filmId: string) => void;
   cycleFlash: () => void;
   flipFacing: () => void;
@@ -44,8 +51,11 @@ type CameraState = {
   setLens: (lensId: string | null) => void;
   setReading: (reading: ExposureReading, isAuto: boolean) => void;
   setMetered: (reading: ExposureReading) => void;
+  setManualExposure: (exposure: ExposureReading | null) => void;
   setLastShot: (shot: CapturedShot) => void;
   setCaptureProgress: (progress: CaptureProgress | null) => void;
+  togglePerfHud: () => void;
+  setLastTimings: (timings: CaptureTimings) => void;
 };
 
 export const useCameraStore = create<CameraState>()(
@@ -61,8 +71,11 @@ export const useCameraStore = create<CameraState>()(
       lensId: null,
       reading: null,
       metered: null,
+      manualExposure: null,
       lastShot: null,
       captureProgress: null,
+      showPerfHud: false,
+      lastTimings: null,
       setFilm: (filmId) => set({ filmId }),
       cycleFlash: () => {
         const index = FLASH_ORDER.indexOf(get().flashMode);
@@ -78,7 +91,10 @@ export const useCameraStore = create<CameraState>()(
       setReading: (reading, isAuto) =>
         set(isAuto ? { reading, metered: reading } : { reading }),
       setMetered: (metered) => set({ metered }),
+      setManualExposure: (manualExposure) => set({ manualExposure }),
       setCaptureProgress: (captureProgress) => set({ captureProgress }),
+      togglePerfHud: () => set((s) => ({ showPerfHud: !s.showPerfHud })),
+      setLastTimings: (lastTimings) => set({ lastTimings }),
       setLastShot: (shot) => {
         get().lastShot?.thumb?.dispose();
         set({ lastShot: shot });
@@ -95,6 +111,7 @@ export const useCameraStore = create<CameraState>()(
         exposure: s.exposure,
         showGrid: s.showGrid,
         aspectId: s.aspectId,
+        showPerfHud: s.showPerfHud,
       }),
     },
   ),

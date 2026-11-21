@@ -1,13 +1,15 @@
 import {
   FilterMode,
-  ImageFormat,
   MipmapMode,
   Skia,
+  type SkData,
   type SkImage,
 } from '@shopify/react-native-skia';
 import { File, Paths } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import { Asset, requestPermissionsAsync } from 'expo-media-library';
+
+import PhotoExif from '@modules/photo-exif';
 
 import type { SourcePhoto } from '../types/editor.types';
 
@@ -61,16 +63,61 @@ export function resizeImage(image: SkImage, maxEdge: number): SkImage {
   return result;
 }
 
-/** Encodes to JPEG and stores it in the device gallery. */
-export async function saveJpegToGallery(image: SkImage, quality: number): Promise<string> {
+/** Reads an image file into Skia memory without blocking the JS thread. */
+export function loadImageData(uri: string): Promise<SkData> {
+  return Skia.Data.fromURI(uri);
+}
+
+/** EXIF to carry over from the original photo (see modules/photo-exif). */
+export type ExifCopy = {
+  sourceUri: string;
+  /** Written only when the source has no value for the tag. */
+  fallbacks: Record<string, string>;
+  /** Always written (orientation, new size, software…). */
+  overrides: Record<string, string>;
+};
+
+/** Smallest plausible JPEG; anything below means the encode or write failed. */
+const MIN_JPEG_BYTES = 1024;
+
+/**
+ * Stores an already-encoded JPEG (base64) in the device gallery, with EXIF when
+ * given. Never saves an empty file: each step is size-checked, and if adding
+ * EXIF damages the file it is rewritten without metadata.
+ */
+export async function saveJpegToGallery(jpegBase64: string, exif?: ExifCopy): Promise<string> {
   const permission = await requestPermissionsAsync(true, ['photo']);
   if (!permission.granted) throw new Error('Chưa được cấp quyền lưu ảnh');
+  if (jpegBase64.length < MIN_JPEG_BYTES) {
+    throw new Error(`Không nén được ảnh (JPEG rỗng, ${jpegBase64.length} ký tự)`);
+  }
 
-  const bytes = image.encodeToBytes(ImageFormat.JPEG, quality);
   const file = new File(Paths.cache, `photo-${Date.now()}.jpg`);
   file.create();
-  file.write(bytes);
   try {
+    file.write(jpegBase64, { encoding: 'base64' });
+    const written = file.size;
+    if (written < MIN_JPEG_BYTES) throw new Error(`Không ghi được ảnh (${written} byte)`);
+
+    if (exif && PhotoExif) {
+      // Metadata is best-effort: a failure must never lose the photo itself.
+      const exifError = await PhotoExif.copyExif(
+        exif.sourceUri,
+        file.uri,
+        exif.fallbacks,
+        exif.overrides,
+      ).then(
+        () => null,
+        (e: unknown) => String(e),
+      );
+      const withExif = file.size;
+      if (exifError || withExif < MIN_JPEG_BYTES) {
+        console.warn(`[save] EXIF skipped (${exifError ?? `file ${withExif} B`}), saving without it`);
+        file.write(jpegBase64, { encoding: 'base64' });
+      }
+    }
+
+    console.log(`[save] base64 ${jpegBase64.length} chars → file ${file.size} B`);
     await Asset.create(file.uri);
   } finally {
     file.delete();

@@ -76,6 +76,7 @@ export function rotateCropClockwise(crop: CropRect): CropRect {
 
 /** Largest centered crop with the given pixel aspect ratio inside `frame`. */
 export function centeredCrop(frame: Size, ratio: number): CropRect {
+  'worklet';
   const frameRatio = frame.width / frame.height;
   if (ratio >= frameRatio) {
     const height = frameRatio / ratio;

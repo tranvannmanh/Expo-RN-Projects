@@ -16,6 +16,7 @@ import { EditorColors, Radius, Spacing } from '@/constants/theme';
 
 import {
   CameraLayout,
+  FALLBACK_PIXEL_FORMAT,
   LIVE_FILM_PREVIEW,
   PHOTO_ORIENTATION_SOURCE,
   PREVIEW_PIXEL_FORMAT,
@@ -62,6 +63,7 @@ export function FilmCameraView({
   const skiaCamera = useRef<SkiaCameraRef>(null);
   const nativeCamera = useRef<CameraRef>(null);
   const [area, setArea] = useState<Box | null>(null);
+  const [pixelFormat, setPixelFormat] = useState(PREVIEW_PIXEL_FORMAT);
   const box = area ? fitBox(area, aspect) : null;
   const { gesture, ringStyle } = useCameraFocus(
     (point) => (skiaCamera.current ?? nativeCamera.current)?.focusTo(point),
@@ -72,6 +74,13 @@ export function FilmCameraView({
     if (controller) onController(controller);
   };
   const onLayout = (e: LayoutChangeEvent) => setArea(e.nativeEvent.layout);
+
+  // Fall back to CPU (YUV) frames when this camera rejects GPU buffers.
+  const onSkiaError = (error: Error) => {
+    if (pixelFormat !== FALLBACK_PIXEL_FORMAT && /PRIVATE|format/i.test(error.message)) {
+      setPixelFormat(FALLBACK_PIXEL_FORMAT);
+    }
+  };
 
   return (
     <View style={styles.area} onLayout={onLayout}>
@@ -89,7 +98,8 @@ export function FilmCameraView({
                 onStarted={onStarted}
                 orientationSource={PHOTO_ORIENTATION_SOURCE}
                 targetResolution={PREVIEW_RESOLUTION}
-                pixelFormat={PREVIEW_PIXEL_FORMAT}
+                pixelFormat={pixelFormat}
+                onError={onSkiaError}
               />
             ) : (
               <>

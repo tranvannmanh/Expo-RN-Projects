@@ -1,4 +1,9 @@
-import { EV_STEP, ISO_STOPS, SHUTTER_STOPS } from '../constants/camera.constants';
+import {
+  EV_STEP,
+  ISO_STOPS,
+  PREVIEW_MAX_SHUTTER_SECONDS,
+  SHUTTER_STOPS,
+} from '../constants/camera.constants';
 import type { ExposureReading } from '../types/camera.types';
 
 const SUB_SECOND = 0.3;
@@ -58,4 +63,25 @@ export function isoForShutter(
 /** Light-meter offset (stops) of a manual exposure versus the auto-metered one. */
 export function meterOffset(reference: ExposureReading, iso: number, shutter: number): number {
   return Math.log2((iso * shutter) / (reference.iso * reference.duration));
+}
+
+export type PreviewExposure = ExposureReading & {
+  /** Extra brightness (stops) applied in the viewfinder shader when ISO tops out. */
+  gainEv: number;
+};
+
+/**
+ * Viewfinder settings that look like `capture` but keep the frame rate up:
+ * shutter capped at PREVIEW_MAX_SHUTTER_SECONDS, ISO raised by the same factor,
+ * any remainder above the sensor's max ISO returned as a shader gain.
+ */
+export function previewExposure(
+  capture: ExposureReading,
+  isoRange: { min: number; max: number },
+): PreviewExposure {
+  if (capture.duration <= PREVIEW_MAX_SHUTTER_SECONDS) return { ...capture, gainEv: 0 };
+  const duration = PREVIEW_MAX_SHUTTER_SECONDS;
+  const wantedIso = (capture.iso * capture.duration) / duration;
+  const iso = Math.min(isoRange.max, Math.max(isoRange.min, wantedIso));
+  return { duration, iso: Math.round(iso), gainEv: Math.log2(wantedIso / iso) };
 }

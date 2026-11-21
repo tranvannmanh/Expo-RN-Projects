@@ -13,6 +13,7 @@ import {
 } from '../constants/camera.constants';
 import { useCameraStore } from '../store/camera.store';
 import type { CameraPanel } from '../types/camera.types';
+import { useAppActive } from './useAppActive';
 import { useCameraLenses } from './useCameraLenses';
 import { useCapturePhoto } from './useCapturePhoto';
 import { useExposureControl } from './useExposureControl';
@@ -56,7 +57,10 @@ export function useFilmCamera() {
   const exposure = useExposureControl(activeController);
   const capture = useCapturePhoto();
   const shutterFlash = useShutterFlash();
-  const isActive = useIsFocused();
+  const isFocused = useIsFocused();
+  const app = useAppActive();
+  // Release the camera when the screen is left or the app goes to the background.
+  const isActive = isFocused && app.isActive;
   // Flash needs auto exposure; S / M drive the sensor manually.
   const hasFlash = Boolean(device?.hasFlash) && !exposure.isManual;
 
@@ -66,6 +70,11 @@ export function useFilmCamera() {
       ? exposure.exposure.shutter
       : (useCameraStore.getState().reading?.duration ?? 0);
 
+  const expectedExposureIso = () => {
+    const state = useCameraStore.getState();
+    return (exposure.isManual ? state.manualExposure?.iso : state.reading?.iso) ?? 0;
+  };
+
   const shoot = () => {
     if (capture.isPending) return;
     shutterFlash.fire();
@@ -74,6 +83,8 @@ export function useFilmCamera() {
       filmId,
       flashMode: hasFlash ? flashMode : 'off',
       exposureSeconds: expectedExposureSeconds(),
+      exposureIso: expectedExposureIso(),
+      prepareExposure: exposure.prepareCapture,
       // 4:3 is the sensor frame itself; no crop needed.
       aspect: aspect.id === ASPECT_FULL_FRAME ? undefined : aspect.ratio,
     });
@@ -127,6 +138,8 @@ export function useFilmCamera() {
     onFrame,
     onController: setController,
     isActive,
+    /** Changes on every return to the foreground: remount the viewfinder. */
+    sessionKey: app.resumeCount,
     hasFlash,
     sample,
     exposure,

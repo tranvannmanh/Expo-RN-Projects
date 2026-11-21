@@ -17,6 +17,7 @@ const MODE_FONT_SIZE = 30;
 /** Close on the left; the shooting mode as a large letter on the right, like Sony. */
 export function CameraHeader({ onClose, onModePress }: CameraHeaderProps) {
   const mode = useCameraStore((s) => s.mode);
+  const togglePerfHud = useCameraStore((s) => s.togglePerfHud);
   const label = CAPTURE_MODES.find((m) => m.id === mode)?.label ?? '';
 
   return (
@@ -25,6 +26,7 @@ export function CameraHeader({ onClose, onModePress }: CameraHeaderProps) {
       <Pressable
         hitSlop={Spacing.two}
         onPress={onModePress}
+        onLongPress={togglePerfHud}
         style={({ pressed }) => [styles.mode, pressed && styles.pressed]}>
         <ThemedText style={styles.modeText}>{label}</ThemedText>
       </Pressable>

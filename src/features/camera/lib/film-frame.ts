@@ -1,6 +1,7 @@
 import { FilterMode, MipmapMode, Skia, TileMode, type SkImage } from '@shopify/react-native-skia';
 import type { Frame } from 'react-native-vision-camera';
 import type { SkiaOnFrameState } from 'react-native-vision-camera-skia';
+import { createSynchronizable } from 'react-native-worklets';
 
 import {
   DEFAULT_ADJUSTMENTS,
@@ -9,6 +10,15 @@ import {
   photoEffect,
   type FilmPreset,
 } from '@/features/photo-editor';
+
+/**
+ * Viewfinder counters written on the camera thread and read (then reset) by the
+ * performance HUD: frames rendered and total time spent rendering them.
+ */
+export const frameStats = createSynchronizable({ frames: 0, renderMs: 0 });
+
+/** Exposure gain (stops) added to viewfinder frames only, set by S / M exposure simulation. */
+export const previewGainEv = createSynchronizable(0);
 
 export type FrameRenderer = (
   frame: Frame,
@@ -31,6 +41,7 @@ export function createFilmFrameRenderer(film: FilmPreset, lut: SkImage): FrameRe
 
   return (frame, render) => {
     'worklet';
+    const startedAt = performance.now();
     render(({ canvas, frameTexture }) => {
       const width = frameTexture.width();
       const height = frameTexture.height();
@@ -46,11 +57,17 @@ export function createFilmFrameRenderer(film: FilmPreset, lut: SkImage): FrameRe
         FilterMode.Linear,
         MipmapMode.None,
       );
-      const uniforms = flattenUniforms({ ...base, outSize: [width, height] });
+      const uniforms = flattenUniforms({
+        ...base,
+        exposure: base.exposure + previewGainEv.getBlocking(),
+        outSize: [width, height],
+      });
       const paint = Skia.Paint();
       paint.setShader(photoEffect.makeShaderWithChildren(uniforms, [image, curves]));
       canvas.drawRect(Skia.XYWHRect(0, 0, width, height), paint);
     });
+    const elapsed = performance.now() - startedAt;
+    frameStats.setBlocking((s) => ({ frames: s.frames + 1, renderMs: s.renderMs + elapsed }));
     frame.dispose();
   };
 }

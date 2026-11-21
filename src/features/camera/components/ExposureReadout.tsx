@@ -11,7 +11,10 @@ import { useCameraStore } from '../store/camera.store';
  * exposure value (EV comp, or the meter offset in M) and live ISO.
  */
 export function ExposureReadout() {
-  const reading = useCameraStore((s) => s.reading);
+  const liveReading = useCameraStore((s) => s.reading);
+  const manualExposure = useCameraStore((s) => s.manualExposure);
+  // In S / M show what the capture will use, not the faster viewfinder exposure.
+  const reading = manualExposure ?? liveReading;
   const metered = useCameraStore((s) => s.metered);
   const mode = useCameraStore((s) => s.mode);
   const exposure = useCameraStore((s) => s.exposure);

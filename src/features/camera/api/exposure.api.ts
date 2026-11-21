@@ -34,3 +34,20 @@ export function readExposure(controller: CameraController): ExposureReading | nu
 }
 
 export const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Resolves once frames report `duration` (within `tolerance`), or after
+ * `timeoutMs`; used before a capture so the photo uses the requested exposure.
+ */
+export async function waitForExposure(
+  controller: CameraController,
+  duration: number,
+  options: { tolerance: number; pollMs: number; timeoutMs: number },
+): Promise<void> {
+  const deadline = Date.now() + options.timeoutMs;
+  while (Date.now() < deadline) {
+    const actual = controller.exposureDuration;
+    if (actual > 0 && Math.abs(actual - duration) / duration <= options.tolerance) return;
+    await wait(options.pollMs);
+  }
+}

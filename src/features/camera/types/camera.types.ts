@@ -5,6 +5,13 @@ import type { Geometry, SourcePhoto } from '@/features/photo-editor';
 
 export type CameraFacing = 'back' | 'front';
 
+/** Stage durations of the last capture (ms), shown in the performance HUD. */
+export type CaptureTimings = {
+  captureMs: number;
+  processMs: number;
+  saveMs: number;
+};
+
 /** Long-exposure capture state shown over the viewfinder. */
 export type CaptureProgress =
   /** Shutter pressed; the camera is still preparing the long frame. */

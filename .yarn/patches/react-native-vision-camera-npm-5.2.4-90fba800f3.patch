@@ -59,15 +59,17 @@ index 0000000000000000000000000000000000000000..0ae1621e6c37bcb8badce12f0303ce4a
 +  }
 +}
 diff --git a/android/src/main/java/com/margelo/nitro/camera/hybrids/HybridCameraController.kt b/android/src/main/java/com/margelo/nitro/camera/hybrids/HybridCameraController.kt
-index 337601a7029d7d354a999275e1c1860b271b6fcf..9b75c9d70e51983a4a00a5ef142d096621678b2b 100644
+index 337601a7029d7d354a999275e1c1860b271b6fcf..fe063d101b6d4a26c6254b9abe3f7603fe15fbfb 100644
 --- a/android/src/main/java/com/margelo/nitro/camera/hybrids/HybridCameraController.kt
 +++ b/android/src/main/java/com/margelo/nitro/camera/hybrids/HybridCameraController.kt
-@@ -2,6 +2,12 @@ package com.margelo.nitro.camera.hybrids
+@@ -2,6 +2,14 @@ package com.margelo.nitro.camera.hybrids
  
  import android.animation.Animator
  import android.animation.ValueAnimator
 +import android.hardware.camera2.CameraCharacteristics
 +import android.hardware.camera2.CaptureRequest
++import android.util.Log
++import android.util.Range
 +import androidx.camera.camera2.interop.Camera2CameraControl
 +import androidx.camera.camera2.interop.CaptureRequestOptions
 +import com.margelo.nitro.camera.extensions.ExposureTracker
@@ -75,7 +77,7 @@ index 337601a7029d7d354a999275e1c1860b271b6fcf..9b75c9d70e51983a4a00a5ef142d0966
  import androidx.camera.core.Camera
  import androidx.camera.core.CameraState
  import androidx.camera.core.FocusMeteringAction
-@@ -77,10 +83,15 @@ class HybridCameraController(
+@@ -77,10 +85,15 @@ class HybridCameraController(
    override val torchMode: TorchMode
      get() = TorchMode.fromTorchState(camera.cameraInfo.torchState.value ?: TorchState.OFF)
  
@@ -93,7 +95,7 @@ index 337601a7029d7d354a999275e1c1860b271b6fcf..9b75c9d70e51983a4a00a5ef142d0966
  
    override val isLowLightBoostEnabled: Boolean
      get() = camera.cameraInfo.lowLightBoostState.value != LowLightBoostState.OFF
-@@ -93,7 +104,7 @@ class HybridCameraController(
+@@ -93,7 +106,7 @@ class HybridCameraController(
    override val focusMode: FocusMode
      get() = FocusMode.CONTINUOUS_AUTO_FOCUS
    override val exposureMode: ExposureMode
@@ -102,7 +104,7 @@ index 337601a7029d7d354a999275e1c1860b271b6fcf..9b75c9d70e51983a4a00a5ef142d0966
    override val whiteBalanceMode: WhiteBalanceMode
      get() = WhiteBalanceMode.CONTINUOUS_AUTO_WHITE_BALANCE
  
-@@ -201,7 +212,7 @@ class HybridCameraController(
+@@ -201,7 +214,7 @@ class HybridCameraController(
    override fun setExposureBias(exposure: Double): Promise<Unit> {
      return Promise.async {
        camera.cameraControl
@@ -111,7 +113,7 @@ index 337601a7029d7d354a999275e1c1860b271b6fcf..9b75c9d70e51983a4a00a5ef142d0966
          .await()
      }
    }
-@@ -300,35 +311,55 @@ class HybridCameraController(
+@@ -300,35 +313,81 @@ class HybridCameraController(
      )
    }
  
@@ -121,6 +123,32 @@ index 337601a7029d7d354a999275e1c1860b271b6fcf..9b75c9d70e51983a4a00a5ef142d0966
 +  @Volatile private var isExposureManual = false
 +  private val characteristics: CameraCharacteristics?
 +    get() = camera.cameraInfo.cameraCharacteristicsOrNull
++
++  // [Film Studio patch] Keep the viewfinder fluid in low light: auto exposure may
++  // not stretch frames below MIN_PREVIEW_FPS (it raises ISO instead). Picked from
++  // the ranges this camera advertises, so it works on any device.
++  private val autoExposureFpsRange: Range<Int>? by lazy {
++    val ranges = characteristics?.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES)
++    if (ranges.isNullOrEmpty()) return@lazy null
++    ranges
++      .filter { it.lower >= MIN_PREVIEW_FPS }
++      .maxWithOrNull(compareBy<Range<Int>>({ it.upper }, { -it.lower }))
++      ?: ranges.maxByOrNull { it.lower }
++  }
++
++  private fun autoExposureOptions(): CaptureRequestOptions {
++    val builder = CaptureRequestOptions.Builder()
++    autoExposureFpsRange?.let { builder.setCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, it) }
++    return builder.build()
++  }
++
++  init {
++    try {
++      Camera2CameraControl.from(camera.cameraControl).setCaptureRequestOptions(autoExposureOptions())
++    } catch (e: Exception) {
++      Log.w("VisionCamera", "Could not apply auto-exposure FPS range", e)
++    }
++  }
 +
    override val minExposureDuration: Double
 -    get() = 0.0
@@ -153,7 +181,7 @@ index 337601a7029d7d354a999275e1c1860b271b6fcf..9b75c9d70e51983a4a00a5ef142d0966
 +      val control = Camera2CameraControl.from(camera.cameraControl)
 +      if (duration <= 0.0 || iso <= 0.0) {
 +        isExposureManual = false
-+        control.clearCaptureRequestOptions().await()
++        control.setCaptureRequestOptions(autoExposureOptions()).await()
 +        return@async
 +      }
 +      if (!device.supportsExposureLocking) {
@@ -182,6 +210,16 @@ index 337601a7029d7d354a999275e1c1860b271b6fcf..9b75c9d70e51983a4a00a5ef142d0966
    }
  
    // TODO: Once CameraX implements locking AWB to custom White Balance Gains, implement this:
+@@ -355,4 +414,9 @@ class HybridCameraController(
+         "You can use AWB metering locks (`focusTo(point, { modes: ['AWB'], adaptiveness: 'locked' })`) instead.",
+     )
+   }
++
++  private companion object {
++    /** Lowest viewfinder frame rate auto exposure may drop to. */
++    const val MIN_PREVIEW_FPS = 15
++  }
+ }
 diff --git a/android/src/main/java/com/margelo/nitro/camera/hybrids/inputs/HybridCameraDevice.kt b/android/src/main/java/com/margelo/nitro/camera/hybrids/inputs/HybridCameraDevice.kt
 index a00188fb157f776c8f922311b259bab14cb55265..2ace8de1ebea3423c291673b9bcfa1b00c0a6092 100644
 --- a/android/src/main/java/com/margelo/nitro/camera/hybrids/inputs/HybridCameraDevice.kt

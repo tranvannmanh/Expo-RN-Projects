@@ -7,15 +7,26 @@ import {
   readExposure,
   setExposureBias,
   wait,
+  waitForExposure,
 } from '../api/exposure.api';
 import {
   EV_LIMIT,
   EXPOSURE_POLL_MS,
+  EXPOSURE_SETTLE_POLL_MS,
+  EXPOSURE_SETTLE_TOLERANCE,
   MANUAL_MODES,
   MAX_SHUTTER_SECONDS,
   METER_SETTLE_MS,
 } from '../constants/camera.constants';
-import { evStops, isoForShutter, isoStops, nearest, shutterStops } from '../lib/exposure';
+import { previewGainEv } from '../lib/film-frame';
+import {
+  evStops,
+  isoForShutter,
+  isoStops,
+  nearest,
+  previewExposure,
+  shutterStops,
+} from '../lib/exposure';
 import { useCameraStore } from '../store/camera.store';
 import type { CaptureMode } from '../types/camera.types';
 
@@ -38,6 +49,7 @@ export function useExposureControl(controller: CameraController | undefined) {
   const setExposure = useCameraStore((s) => s.setExposure);
   const setReading = useCameraStore((s) => s.setReading);
   const setMetered = useCameraStore((s) => s.setMetered);
+  const setManualExposure = useCameraStore((s) => s.setManualExposure);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
 
@@ -88,11 +100,19 @@ export function useExposureControl(controller: CameraController | undefined) {
     let cancelled = false;
     const target = JSON.parse(targetKey) as Target;
     const apply = async () => {
+      if (target.kind !== 'manual') {
+        previewGainEv.setBlocking(0);
+        setManualExposure(null);
+      }
       if (target.kind === 'auto') {
         await releaseExposure(controller);
         await setExposureBias(controller, target.bias);
       } else if (target.kind === 'manual') {
-        await lockExposure(controller, target.duration, target.iso);
+        // The viewfinder simulates the capture exposure at a fluid frame rate.
+        const preview = previewExposure(target, { min: controller.minISO, max: controller.maxISO });
+        setManualExposure({ duration: target.duration, iso: target.iso });
+        previewGainEv.setBlocking(preview.gainEv);
+        await lockExposure(controller, preview.duration, preview.iso);
       } else {
         await releaseExposure(controller);
         await wait(METER_SETTLE_MS);
@@ -107,7 +127,7 @@ export function useExposureControl(controller: CameraController | undefined) {
     return () => {
       cancelled = true;
     };
-  }, [controller, targetKey, nonce, setMetered]);
+  }, [controller, targetKey, nonce, setMetered, setManualExposure]);
 
   const setMode = (next: CaptureMode) => {
     const reference = useCameraStore.getState().metered;
@@ -120,6 +140,26 @@ export function useExposureControl(controller: CameraController | undefined) {
       setExposure({ shutter: nearest(options.shutter, reference.duration), ev: 0 });
     }
     setModeInStore(next);
+  };
+
+  /**
+   * S / M: switches the sensor from the viewfinder simulation to the real
+   * capture exposure and waits until frames use it. Resolves to a function
+   * that restores the fluid viewfinder, or null when nothing had to change.
+   */
+  const prepareCapture = async (): Promise<(() => void) | null> => {
+    if (!controller || target.kind !== 'manual') return null;
+    const preview = previewExposure(target, { min: controller.minISO, max: controller.maxISO });
+    if (preview.duration === target.duration && preview.iso === target.iso) return null;
+    await lockExposure(controller, target.duration, target.iso);
+    previewGainEv.setBlocking(0);
+    await waitForExposure(controller, target.duration, {
+      tolerance: EXPOSURE_SETTLE_TOLERANCE,
+      pollMs: EXPOSURE_SETTLE_POLL_MS,
+      // A couple of long frames plus pipeline latency.
+      timeoutMs: target.duration * 3000 + METER_SETTLE_MS,
+    });
+    return () => setNonce((n) => n + 1);
   };
 
   /** Re-reads the scene with auto exposure, then re-applies S / M. */
@@ -142,6 +182,7 @@ export function useExposureControl(controller: CameraController | undefined) {
     canBias,
     isManual,
     remeter,
+    prepareCapture,
     error,
   };
 }
