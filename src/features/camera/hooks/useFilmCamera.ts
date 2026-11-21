@@ -1,6 +1,7 @@
 import { useIsFocused, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { usePhotoOutput, type CameraController } from 'react-native-vision-camera';
+import * as Haptics from 'expo-haptics';
+import { VisionCamera, usePhotoOutput, type CameraController } from 'react-native-vision-camera';
 
 import { useEditorStore } from '@/features/photo-editor';
 
@@ -18,6 +19,7 @@ import { useExposureControl } from './useExposureControl';
 import { useFilmFrameRenderer } from './useFilmFrameRenderer';
 import { useFilmSample } from './useFilmSample';
 import { useFnMenu } from './useFnMenu';
+import { useHardwareShutter } from './useHardwareShutter';
 import { useShutterFlash } from './useShutterFlash';
 
 /** Wires lens, exposure mode, film rendering and capture for the camera screen. */
@@ -58,6 +60,12 @@ export function useFilmCamera() {
   // Flash needs auto exposure; S / M drive the sensor manually.
   const hasFlash = Boolean(device?.hasFlash) && !exposure.isManual;
 
+  /** Manual shutter in S / M; otherwise the auto exposure currently metered. */
+  const expectedExposureSeconds = () =>
+    exposure.isManual
+      ? exposure.exposure.shutter
+      : (useCameraStore.getState().reading?.duration ?? 0);
+
   const shoot = () => {
     if (capture.isPending) return;
     shutterFlash.fire();
@@ -65,10 +73,27 @@ export function useFilmCamera() {
       output: photoOutput,
       filmId,
       flashMode: hasFlash ? flashMode : 'off',
+      exposureSeconds: expectedExposureSeconds(),
       // 4:3 is the sensor frame itself; no crop needed.
       aspect: aspect.id === ASPECT_FULL_FRAME ? undefined : aspect.ratio,
     });
   };
+
+  /** Half-press: refocus and re-meter on the center, like a camera's AF-ON. */
+  const focusCenter = () => {
+    if (!activeController) return;
+    Haptics.selectionAsync();
+    const center = VisionCamera.createNormalizedMeteringPoint(0.5, 0.5);
+    activeController.focusTo(center, {}).catch(() => {
+      // Devices without focus metering reject the request.
+    });
+  };
+
+  useHardwareShutter({
+    enabled: isActive && Boolean(device),
+    onHalfPress: focusCenter,
+    onShutter: shoot,
+  });
 
   const openLastShot = () => {
     if (!lastShot) return;

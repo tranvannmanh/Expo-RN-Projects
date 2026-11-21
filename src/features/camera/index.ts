@@ -4,6 +4,7 @@ export { CameraPermissionView } from './components/CameraPermissionView';
 export { ExposureReadout } from './components/ExposureReadout';
 export { FilmCameraView } from './components/FilmCameraView';
 export { LensSelector } from './components/LensSelector';
+export { LongExposureOverlay } from './components/LongExposureOverlay';
 export { ShutterBar } from './components/ShutterBar';
 export { ViewfinderGrid } from './components/ViewfinderGrid';
 export { useCameraStore } from './store/camera.store';

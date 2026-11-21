@@ -5,6 +5,13 @@ import type { Geometry, SourcePhoto } from '@/features/photo-editor';
 
 export type CameraFacing = 'back' | 'front';
 
+/** Long-exposure capture state shown over the viewfinder. */
+export type CaptureProgress =
+  /** Shutter pressed; the camera is still preparing the long frame. */
+  | { phase: 'preparing'; duration: number }
+  | { phase: 'exposing'; duration: number; startedAt: number }
+  | { phase: 'processing' };
+
 /** Auto, Program (EV comp), Shutter priority, Manual. */
 export type CaptureMode = 'auto' | 'p' | 's' | 'm';
 

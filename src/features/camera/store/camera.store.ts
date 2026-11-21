@@ -8,6 +8,7 @@ import { DEFAULT_ASPECT_ID, DEFAULT_EXPOSURE, FLASH_ORDER } from '../constants/c
 import type {
   CameraFacing,
   CapturedShot,
+  CaptureProgress,
   CaptureMode,
   ExposureReading,
   ExposureSettings,
@@ -31,6 +32,8 @@ type CameraState = {
   metered: ExposureReading | null;
   /** Session only: the most recent capture (not persisted). */
   lastShot: CapturedShot | null;
+  /** Session only: long-exposure progress, null when not shown. */
+  captureProgress: CaptureProgress | null;
   setFilm: (filmId: string) => void;
   cycleFlash: () => void;
   flipFacing: () => void;
@@ -42,6 +45,7 @@ type CameraState = {
   setReading: (reading: ExposureReading, isAuto: boolean) => void;
   setMetered: (reading: ExposureReading) => void;
   setLastShot: (shot: CapturedShot) => void;
+  setCaptureProgress: (progress: CaptureProgress | null) => void;
 };
 
 export const useCameraStore = create<CameraState>()(
@@ -58,6 +62,7 @@ export const useCameraStore = create<CameraState>()(
       reading: null,
       metered: null,
       lastShot: null,
+      captureProgress: null,
       setFilm: (filmId) => set({ filmId }),
       cycleFlash: () => {
         const index = FLASH_ORDER.indexOf(get().flashMode);
@@ -73,6 +78,7 @@ export const useCameraStore = create<CameraState>()(
       setReading: (reading, isAuto) =>
         set(isAuto ? { reading, metered: reading } : { reading }),
       setMetered: (metered) => set({ metered }),
+      setCaptureProgress: (captureProgress) => set({ captureProgress }),
       setLastShot: (shot) => {
         get().lastShot?.thumb?.dispose();
         set({ lastShot: shot });

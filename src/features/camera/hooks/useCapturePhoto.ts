@@ -10,6 +10,7 @@ import {
 } from '@/features/photo-editor';
 
 import { capturePhoto } from '../api/camera.api';
+import { LONG_EXPOSURE_SECONDS } from '../constants/camera.constants';
 import { useCameraStore } from '../store/camera.store';
 import type { CapturedShot, FlashMode } from '../types/camera.types';
 
@@ -19,6 +20,8 @@ type CaptureInput = {
   flashMode: FlashMode;
   /** Long:short ratio to crop to; undefined keeps the full sensor frame. */
   aspect?: number;
+  /** Expected sensor exposure (seconds); long ones show a progress overlay. */
+  exposureSeconds: number;
 };
 
 /**
@@ -28,11 +31,27 @@ type CaptureInput = {
 export function useCapturePhoto() {
   const settings = useEditorSettingsStore((s) => s.exportSettings);
   const setLastShot = useCameraStore((s) => s.setLastShot);
+  const setProgress = useCameraStore((s) => s.setCaptureProgress);
 
   return useMutation({
-    mutationFn: async ({ output, filmId, flashMode, aspect }: CaptureInput): Promise<CapturedShot> => {
+    mutationFn: async ({
+      output,
+      filmId,
+      flashMode,
+      aspect,
+      exposureSeconds,
+    }: CaptureInput): Promise<CapturedShot> => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const photo = await capturePhoto(output, flashMode);
+      const isLong = exposureSeconds >= LONG_EXPOSURE_SECONDS;
+      if (isLong) setProgress({ phase: 'preparing', duration: exposureSeconds });
+      const photo = await capturePhoto(output, flashMode, {
+        onWillCapturePhoto: () => {
+          if (isLong) setProgress({ phase: 'exposing', duration: exposureSeconds, startedAt: Date.now() });
+        },
+        onDidCapturePhoto: () => {
+          if (isLong) setProgress({ phase: 'processing' });
+        },
+      });
       const recipe = { ...createDefaultRecipe(), filmId };
       const saved = await exportPhoto({
         photo,
@@ -44,5 +63,6 @@ export function useCapturePhoto() {
       return { photo, filmId, geometry: saved.recipe.geometry, thumb: saved.thumb };
     },
     onSuccess: setLastShot,
+    onSettled: () => setProgress(null),
   });
 }

@@ -12,14 +12,12 @@ import {
   EV_LIMIT,
   EXPOSURE_POLL_MS,
   MANUAL_MODES,
+  MAX_SHUTTER_SECONDS,
   METER_SETTLE_MS,
 } from '../constants/camera.constants';
 import { evStops, isoForShutter, isoStops, nearest, shutterStops } from '../lib/exposure';
 import { useCameraStore } from '../store/camera.store';
 import type { CaptureMode } from '../types/camera.types';
-
-/** Longest shutter offered: longer exposures freeze the live preview. */
-const MAX_SHUTTER = 1;
 
 type Target =
   | { kind: 'auto'; bias: number }
@@ -52,7 +50,7 @@ export function useExposureControl(controller: CameraController | undefined) {
     () => ({
       iso: controller ? isoStops(controller.minISO, controller.maxISO) : [],
       shutter: controller
-        ? shutterStops(controller.minExposureDuration, Math.min(controller.maxExposureDuration, MAX_SHUTTER))
+        ? shutterStops(controller.minExposureDuration, Math.min(controller.maxExposureDuration, MAX_SHUTTER_SECONDS))
         : [],
       ev: device
         ? evStops(Math.max(-EV_LIMIT, device.minExposureBias), Math.min(EV_LIMIT, device.maxExposureBias))
