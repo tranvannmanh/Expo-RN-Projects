@@ -22,7 +22,11 @@ export function SchulteCell({ number, onPress, size }: SchulteCellProps) {
           {
             width: (SCREEN_WIDTH - 40) / size,
             backgroundColor:
-              number % 2 === 0 ? 'rgba(16, 60, 4, 1)' : 'rgba(86, 28, 24, 1)',
+              number % 3 === 1
+                ? 'rgba(18, 85, 0, 1)'
+                : number % 3 === 2
+                  ? 'rgba(86, 28, 24, 1)'
+                  : '#002b6fff',
           },
         ]}
       >

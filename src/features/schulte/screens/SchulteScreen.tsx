@@ -63,12 +63,6 @@ export function SchulteScreen() {
                 <ThemedPressable onPress={startGame} style={styles.button}>
                   <ThemedText style={styles.buttonText}>Start Game</ThemedText>
                 </ThemedPressable>
-                {/* <ThemedPressable onPress={startGame} style={styles.button}>
-                  <ThemedText style={styles.buttonText}>5x5</ThemedText>
-                </ThemedPressable>
-                <ThemedPressable onPress={startGame} style={styles.button}>
-                  <ThemedText style={styles.buttonText}>6x6</ThemedText>
-                </ThemedPressable> */}
               </>
             )}
           </>
