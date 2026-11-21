@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import { File } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import type { CameraPhotoOutput } from 'react-native-vision-camera';
 
@@ -8,6 +9,7 @@ import {
   exportPhoto,
   useEditorSettingsStore,
 } from '@/features/photo-editor';
+import { useAddToLibrary } from '@/features/library';
 
 import { capturePhoto } from '../api/camera.api';
 import { LONG_EXPOSURE_SECONDS, PERF_TOOLS_ENABLED } from '../constants/camera.constants';
@@ -38,6 +40,7 @@ export function useCapturePhoto() {
   const setLastShot = useCameraStore((s) => s.setLastShot);
   const setLongCapture = useCameraStore((s) => s.setLongCapture);
   const setSaving = useCameraStore((s) => s.setSaving);
+  const addToLibrary = useAddToLibrary();
   const setLastTimings = useCameraStore((s) => s.setLastTimings);
 
   return useMutation({
@@ -75,7 +78,20 @@ export function useCapturePhoto() {
           exposureSeconds,
           iso: exposureIso,
         }),
+        keepFile: true,
       });
+      const entry = await addToLibrary({
+        fileUri: saved.uri,
+        sourceUri: photo.uri,
+        moveFile: true,
+        width: saved.width,
+        height: saved.height,
+        origin: 'camera',
+        filmId,
+        recipe: saved.recipe,
+      });
+      // The album keeps its own copy of the original; drop the camera's temp file.
+      new File(photo.uri).delete();
       if (PERF_TOOLS_ENABLED) {
         setLastTimings({
           prepareMs: preparedAt - startedAt,
@@ -83,7 +99,12 @@ export function useCapturePhoto() {
           ...saved.timings,
         });
       }
-      return { photo, filmId, geometry: saved.recipe.geometry, thumb: saved.thumb };
+      return {
+        photo: { ...photo, uri: entry.sourceUri },
+        filmId,
+        geometry: saved.recipe.geometry,
+        thumb: saved.thumb,
+      };
     },
     onSuccess: setLastShot,
     onSettled: () => {

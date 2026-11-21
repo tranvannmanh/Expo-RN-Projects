@@ -85,7 +85,12 @@ const MIN_JPEG_BYTES = 1024;
  * given. Never saves an empty file: each step is size-checked, and if adding
  * EXIF damages the file it is rewritten without metadata.
  */
-export async function saveJpegToGallery(jpegBase64: string, exif?: ExifCopy): Promise<string> {
+export async function saveJpegToGallery(
+  jpegBase64: string,
+  exif?: ExifCopy,
+  /** Keep the written file (e.g. for the in-app album) instead of deleting it. */
+  keepFile = false,
+): Promise<string> {
   const permission = await requestPermissionsAsync(true, ['photo']);
   if (!permission.granted) throw new Error('Chưa được cấp quyền lưu ảnh');
   if (jpegBase64.length < MIN_JPEG_BYTES) {
@@ -119,8 +124,10 @@ export async function saveJpegToGallery(jpegBase64: string, exif?: ExifCopy): Pr
 
     if (__DEV__) console.log(`[save] base64 ${jpegBase64.length} chars → file ${file.size} B`);
     await Asset.create(file.uri);
-  } finally {
+  } catch (e) {
     file.delete();
+    throw e;
   }
+  if (!keepFile) file.delete();
   return file.uri;
 }

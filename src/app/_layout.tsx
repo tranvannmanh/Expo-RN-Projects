@@ -17,6 +17,8 @@ export default function RootLayout() {
             <Stack.Screen name="index" />
             <Stack.Screen name="editor" options={{ animation: 'fade', gestureEnabled: false }} />
             <Stack.Screen name="camera" options={{ animation: 'fade' }} />
+            <Stack.Screen name="album/index" />
+            <Stack.Screen name="album/[id]" options={{ animation: 'fade' }} />
           </Stack>
         </ThemeProvider>
       </AppProviders>

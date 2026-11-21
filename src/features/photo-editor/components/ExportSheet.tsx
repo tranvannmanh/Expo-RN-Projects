@@ -10,6 +10,7 @@ import {
 } from '../constants/editor.constants';
 import { EditorLayout } from '../constants/layout.constants';
 import { useExportPhoto } from '../hooks/useExportPhoto';
+import type { ExportInput, ExportResult } from '../lib/export-photo';
 import { useEditorSettingsStore } from '../store/editor-settings.store';
 import { useEditorStore } from '../store/editor.store';
 import type { ExportSize } from '../types/editor.types';
@@ -18,16 +19,18 @@ import { ChipButton } from './ChipButton';
 type ExportSheetProps = {
   visible: boolean;
   onClose: () => void;
+  /** Receives the kept JPEG after saving (e.g. to add it to the album). */
+  onSaved?: (result: ExportResult, input: ExportInput) => Promise<unknown>;
 };
 
 const SIZES = Object.keys(EXPORT_SIZE_LABELS) as ExportSize[];
 
-export function ExportSheet({ visible, onClose }: ExportSheetProps) {
+export function ExportSheet({ visible, onClose, onSaved }: ExportSheetProps) {
   const photo = useEditorStore((s) => s.photo);
   const recipe = useEditorStore((s) => s.recipe);
   const settings = useEditorSettingsStore((s) => s.exportSettings);
   const setSettings = useEditorSettingsStore((s) => s.setExportSettings);
-  const exporter = useExportPhoto();
+  const exporter = useExportPhoto(onSaved);
 
   const onSave = () => {
     if (photo) exporter.mutate({ photo, recipe, settings });

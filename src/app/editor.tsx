@@ -19,6 +19,7 @@ import {
   useEditorStore,
   usePhotoImages,
 } from '@/features/photo-editor';
+import { useAddToLibrary } from '@/features/library';
 
 export default function EditorScreen() {
   const router = useRouter();
@@ -27,6 +28,7 @@ export default function EditorScreen() {
   const filmId = useEditorStore((s) => s.recipe.filmId);
   const curves = useEditorStore((s) => s.recipe.curves);
   const [exportVisible, setExportVisible] = useState(false);
+  const addToLibrary = useAddToLibrary();
 
   const images = usePhotoImages(photo);
   const shared = useEditorSharedValues();
@@ -77,7 +79,23 @@ export default function EditorScreen() {
       )}
 
       <EditorToolbar />
-      <ExportSheet visible={exportVisible} onClose={() => setExportVisible(false)} />
+      <ExportSheet
+        visible={exportVisible}
+        onClose={() => setExportVisible(false)}
+        // Every save is a new album copy; the original and earlier edits stay untouched.
+        onSaved={(result, input) =>
+          addToLibrary({
+            fileUri: result.uri,
+            sourceUri: input.photo.uri,
+            moveFile: true,
+            width: result.width,
+            height: result.height,
+            origin: 'edit',
+            filmId: input.recipe.filmId,
+            recipe: input.recipe,
+          })
+        }
+      />
     </SafeAreaView>
   );
 }

@@ -21,4 +21,5 @@ export { photoEffect } from './lib/photo.shader';
 export { buildUniforms, flattenUniforms } from './lib/uniforms';
 export { createDefaultRecipe, useEditorStore } from './store/editor.store';
 export { useEditorSettingsStore } from './store/editor-settings.store';
-export type { AndroidIcon, FilmPreset, Geometry, SourcePhoto } from './types/editor.types';
+export type { AndroidIcon, EditRecipe, FilmPreset, Geometry, SourcePhoto } from './types/editor.types';
+export type { ExportResult } from './lib/export-photo';

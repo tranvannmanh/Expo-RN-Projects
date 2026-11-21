@@ -24,10 +24,15 @@ export type ExportInput = {
   aspect?: number;
   /** EXIF written only where the source photo has none (e.g. live sensor values). */
   exifFallbacks?: Record<string, string>;
+  /** Keep the saved JPEG file and return its uri (the caller takes ownership). */
+  keepFile?: boolean;
 };
 
 export type ExportResult = {
+  /** The saved JPEG; only still on disk when `keepFile` was set. */
   uri: string;
+  width: number;
+  height: number;
   thumb: SkImage | null;
   /** The recipe actually rendered (including any aspect crop). */
   recipe: EditRecipe;
@@ -46,6 +51,7 @@ export async function exportPhoto({
   thumbMaxEdge,
   aspect,
   exifFallbacks = {},
+  keepFile = false,
 }: ExportInput): Promise<ExportResult> {
   const film = getFilmPreset(recipe.filmId);
   const lut = makeCurveLut(film.curves, recipe.curves);
@@ -78,9 +84,11 @@ export async function exportPhoto({
       Software: EXIF_SOFTWARE,
       ...(film.id === DEFAULT_FILM_ID ? {} : { ImageDescription: `Film: ${film.name}` }),
     },
-  });
+  }, keepFile);
   return {
     uri,
+    width: result.width,
+    height: result.height,
     thumb: result.thumb,
     recipe: result.recipe,
     timings: { processMs: processedAt - startedAt, saveMs: Date.now() - processedAt },

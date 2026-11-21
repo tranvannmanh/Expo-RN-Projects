@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -14,11 +14,14 @@ import {
 	Radius,
 	Spacing,
 } from '@/constants/theme';
+import { RecentPhotos, useLibraryPhotos } from '@/features/library';
 import { useEditorStore, usePickPhoto } from '@/features/photo-editor';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 const APP_ICON = require('@/assets/images/icon.png');
 const HERO_ICON_SIZE = 144;
+/** App icon size in the compact header shown once the album has photos. */
+const HEADER_ICON_SIZE = 40;
 const BUTTON_ICON_SIZE = 22;
 
 export default function StudioScreen() {
@@ -29,22 +32,41 @@ export default function StudioScreen() {
 	const tone = toneStyles[scheme];
 	const accentText = Colors[scheme].accentText;
 	const textColor = Colors[scheme].text;
+	const photos = useLibraryPhotos();
 
 	return (
 		<ThemedView style={styles.container}>
 			<SafeAreaView style={styles.safeArea}>
-				<ThemedView style={styles.hero}>
-					<Image
-						source={APP_ICON}
-						style={[styles.heroIcon, tone.heroIcon]}
-						contentFit="cover"
-					/>
-					<ThemedText type="subtitle">Film-Photo Pro</ThemedText>
-					{/* <ThemedText themeColor="textSecondary" style={styles.centerText}>
-						Giả lập màu phim, chỉnh sáng/tối, curve, cắt xoay — xử lý trực tiếp
-						trên GPU.
-					</ThemedText> */}
-				</ThemedView>
+				{photos.length ? (
+					// Album has photos: compact header + the 9 most recent.
+					<ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+						<View style={styles.headerRow}>
+							<Image
+								source={APP_ICON}
+								style={[styles.headerIcon, tone.heroIcon]}
+								contentFit="cover"
+							/>
+							<ThemedText type="smallBold">Film-Photo Pro</ThemedText>
+						</View>
+						<RecentPhotos
+							photos={photos}
+							total={photos.length}
+							onOpen={(photo) =>
+								router.push({ pathname: '/album/[id]', params: { id: photo.id } })
+							}
+							onSeeAll={() => router.push('/album')}
+						/>
+					</ScrollView>
+				) : (
+					<ThemedView style={styles.hero}>
+						<Image
+							source={APP_ICON}
+							style={[styles.heroIcon, tone.heroIcon]}
+							contentFit="cover"
+						/>
+						<ThemedText type="subtitle">Film-Photo Pro</ThemedText>
+					</ThemedView>
+				)}
 
 				<Pressable
 					onPress={() => picker.mutate()}
@@ -152,6 +174,24 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		justifyContent: 'center',
 		gap: Spacing.three,
+	},
+	scroll: {
+		flex: 1,
+	},
+	scrollContent: {
+		gap: Spacing.four,
+		paddingTop: Spacing.three,
+	},
+	headerRow: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: Spacing.two,
+	},
+	headerIcon: {
+		width: HEADER_ICON_SIZE,
+		height: HEADER_ICON_SIZE,
+		borderRadius: Radius.medium,
+		borderWidth: StyleSheet.hairlineWidth * 3,
 	},
 	heroIcon: {
 		width: HERO_ICON_SIZE,

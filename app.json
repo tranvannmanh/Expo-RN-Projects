@@ -75,7 +75,8 @@
         {
           "prefix": "film-photo-pro"
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,
