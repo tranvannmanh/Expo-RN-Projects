@@ -6,7 +6,8 @@ import { Skia } from '@shopify/react-native-skia';
  *
  * Order: sharpen -> exposure / white balance (linear light) -> film simulation
  * -> tone (contrast, brightness, highlights, shadows, whites, blacks, clarity)
- * -> user curves -> saturation / vibrance -> fade -> vignette -> grain.
+ * -> user curves -> saturation / vibrance -> fade -> lens look -> light filter
+ * -> vignette -> grain. Lens distortion remaps the sampling position first.
  *
  * `lut` is a 256x2 texture: row 0 = film tone curve, row 1 = user curve.
  */
@@ -43,6 +44,10 @@ uniform float3 highlightTint;
 uniform float filmSat;
 uniform float filmStrength;
 uniform float userCurve;
+uniform float lensMode;
+uniform float lensAmount;
+uniform float filterMode;
+uniform float filterAmount;
 
 const float3 LUMA = float3(0.2126, 0.7152, 0.0722);
 
@@ -79,18 +84,164 @@ float valueNoise(float2 p) {
   return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
-half4 main(float2 xy) {
-  float4 src = image.eval(xy);
-  if (bypass > 0.5) {
-    return half4(src);
+
+bool isLens(float mode) { return abs(lensMode - mode) < 0.5; }
+bool isFilter(float mode) { return abs(filterMode - mode) < 0.5; }
+
+float maxDim() { return max(outSize.x, outSize.y); }
+
+// Equidistant-style fisheye: output radius (0..1) -> source radius (0..1).
+float fisheyeRadius(float r, float theta) { return tan(r * theta) / tan(theta); }
+
+// Source position for an output pixel (barrel distortion of the fisheye lenses).
+float2 lensWarp(float2 xy) {
+  float2 c = outSize * 0.5;
+  float2 d = xy - c;
+  float len = length(d);
+  if (len < 0.001) return xy;
+  float corner = length(c);
+  if (isLens(1.0)) {
+    return c + d / len * fisheyeRadius(len / corner, 0.05 + 1.3 * lensAmount) * corner;
   }
-  float3 c = src.rgb;
+  if (isLens(2.0)) {
+    // The whole frame squeezed into a circle inscribed in the output.
+    float r = min(len / min(c.x, c.y), 1.0);
+    return c + d / len * fisheyeRadius(r, 0.6 + 0.8 * lensAmount) * corner;
+  }
+  if (isLens(6.0)) {
+    return c + d / len * fisheyeRadius(len / corner, 0.05 + 0.5 * lensAmount) * corner;
+  }
+  return xy;
+}
+
+// Jittered golden-spiral disc average of the part of the image above the threshold
+// (0 = plain blur). Jitter trades banding for fine noise, which reads as grain.
+float3 discBlur(float2 p, float radius, float threshold, float gain) {
+  float3 acc = float3(0.0);
+  float spin = hash(p) * 6.2831853;
+  for (int i = 0; i < 16; i++) {
+    float fi = float(i);
+    float a = fi * 2.3999632 + spin;
+    float2 o = float2(cos(a), sin(a)) * sqrt((fi + 0.5) / 16.0) * radius;
+    acc += max(image.eval(p + o).rgb * gain - threshold, 0.0);
+  }
+  return acc / (16.0 * (1.0 - threshold));
+}
+
+// Radial blur towards the frame center.
+float3 zoomBlur(float2 p) {
+  float2 c = outSize * 0.5;
+  float strength = 0.13 * lensAmount;
+  float jitter = hash(p);
+  float3 acc = float3(0.0);
+  for (int i = 0; i < 12; i++) {
+    float t = (float(i) + jitter) / 12.0;
+    acc += image.eval(c + (p - c) * (1.0 - t * strength)).rgb;
+  }
+  return acc / 12.0;
+}
+
+// Base color at a (warped) position, with the blur / chromatic aberration of the lens.
+float3 lensSample(float2 p) {
+  float2 d = p - outSize * 0.5;
+  float3 c = image.eval(p).rgb;
+  if (isLens(3.0)) {
+    // Tilt-shift: sharp horizontal band, increasingly blurred above and below.
+    float m = smoothstep(0.06, 0.42, abs(p.y / outSize.y - 0.5));
+    float radius = m * lensAmount * 0.016 * maxDim();
+    if (radius > 0.75) c = discBlur(p, radius, 0.0, 1.0);
+  } else if (isLens(4.0)) {
+    c = zoomBlur(p);
+  } else if (isLens(5.0)) {
+    // Old glass: soft corners.
+    float m = smoothstep(0.4, 1.0, length(d) / length(outSize * 0.5));
+    float radius = m * lensAmount * 0.008 * maxDim();
+    if (radius > 0.75) c = discBlur(p, radius, 0.0, 1.0);
+  }
+  float ca = isLens(5.0) ? 0.012 : isLens(6.0) ? 0.008 : isLens(7.0) ? 0.004 : 0.0;
+  if (ca > 0.0) {
+    c.r = image.eval(p + d * ca * lensAmount).r;
+    c.b = image.eval(p - d * ca * lensAmount).b;
+  }
+  return c;
+}
+
+// Anamorphic flare: bright sources smeared into long horizontal blue streaks.
+float3 anamorphicStreak(float2 p, float gain) {
+  float halfLength = outSize.x * (0.06 + 0.12 * lensAmount);
+  float jitter = hash(p) - 0.5;
+  float acc = 0.0;
+  for (int i = 0; i < 24; i++) {
+    float t = (float(i) + 0.5 + jitter) / 12.0 - 1.0;
+    float l = luma(image.eval(p + float2(t * halfLength, 0.0)).rgb * gain);
+    acc += max(l - 0.75, 0.0) * (1.0 - abs(t));
+  }
+  return float3(0.35, 0.6, 1.0) * acc / 24.0 * 12.0 * lensAmount;
+}
+
+float3 rainbow(float t) {
+  return 0.5 + 0.5 * cos(6.2831853 * (t + float3(0.0, 0.33, 0.67)));
+}
+
+float3 screen(float3 a, float3 b) { return 1.0 - (1.0 - a) * (1.0 - clamp(b, 0.0, 1.0)); }
+
+// Color character of the lens, applied after the film grade.
+float3 lensLook(float3 c, float2 xy) {
+  float2 uv = xy / outSize;
+  float edge = length(uv - 0.5) * 1.41421356;
+  float a = lensAmount;
+  if (isLens(3.0)) {
+    c = mix(float3(luma(c)), c, 1.0 + 0.35 * a);
+  } else if (isLens(5.0)) {
+    c = mix(c, c * float3(1.04, 1.0, 0.9) * 0.92 + 0.05, a * 0.6);
+    c *= 1.0 - 0.35 * a * smoothstep(0.4, 1.1, edge);
+  } else if (isLens(6.0)) {
+    c = mix(float3(luma(c)), c, 1.0 + 0.3 * a);
+    c = mix(c, c * c * (3.0 - 2.0 * c), 0.4 * a);
+    c *= 1.0 - 0.8 * a * smoothstep(0.25, 1.0, edge);
+  }
+  return c;
+}
+
+// Light filters in front of the lens; p is the (warped) source position.
+float3 lightFilter(float3 c, float2 xy, float2 p, float gain) {
+  float a = filterAmount;
+  float2 uv = xy / outSize;
+  if (isFilter(1.0)) {
+    // Pro-Mist: highlights bloom, blacks lift.
+    float3 bloom = discBlur(p, 0.02 * maxDim(), 0.5, gain);
+    c = mix(c, c * 0.9 + 0.06, a * 0.5) + bloom * a * 0.9;
+  } else if (isFilter(2.0)) {
+    // Halation: red-orange glow around bright edges (CineStill look).
+    float3 bloom = discBlur(p, 0.008 * maxDim(), 0.6, gain);
+    c += luma(bloom) * float3(1.0, 0.3, 0.12) * a * 2.4;
+  } else if (isFilter(3.0)) {
+    // Prism: a shifted, rainbow-tinted ghost of the scene on one side.
+    float shift = 0.03 * maxDim() * (0.3 + a);
+    float ghost = luma(image.eval(p + float2(shift, shift * 0.3)).rgb * gain);
+    float w = 1.0 - smoothstep(0.05, 0.75, uv.x);
+    c = screen(c, rainbow(uv.y * 0.8 + uv.x * 0.3) * ghost * w * a * 1.3);
+  } else if (isFilter(4.0)) {
+    // Light leak: warm glows bleeding in from the frame edges.
+    float g1 = exp(-pow(length((uv - float2(-0.1, 0.3)) * float2(1.6, 0.9)), 2.0) * 3.0);
+    float g2 = exp(-pow(length((uv - float2(1.05, 0.85)) * float2(1.8, 1.0)), 2.0) * 5.0);
+    c = screen(c, (float3(1.0, 0.38, 0.12) * g1 + float3(1.0, 0.25, 0.45) * g2 * 0.6) * a);
+  }
+  return c;
+}
+
+half4 main(float2 xy) {
+  if (bypass > 0.5) {
+    return half4(image.eval(xy));
+  }
+  float2 p = lensWarp(xy);
+  float3 c = lensSample(p);
 
   // Luminance unsharp mask (cross kernel) – avoids color fringing.
   if (sharpen > 0.0) {
     float r = detailScale;
-    float3 blur = (sampleRGB(xy + float2(r, 0.0)) + sampleRGB(xy - float2(r, 0.0)) +
-                   sampleRGB(xy + float2(0.0, r)) + sampleRGB(xy - float2(0.0, r))) * 0.25;
+    float3 blur = (sampleRGB(p + float2(r, 0.0)) + sampleRGB(p - float2(r, 0.0)) +
+                   sampleRGB(p + float2(0.0, r)) + sampleRGB(p - float2(0.0, r))) * 0.25;
     c += float3(luma(c - blur) * sharpen * 2.5);
   }
 
@@ -102,7 +253,7 @@ half4 main(float2 xy) {
     for (int i = 0; i < 8; i++) {
       float a = float(i) * 0.7853982;
       float2 o = float2(cos(a), sin(a)) * radius;
-      acc += luma(sampleRGB(xy + o)) + luma(sampleRGB(xy + o * 0.45));
+      acc += luma(sampleRGB(p + o)) + luma(sampleRGB(p + o * 0.45));
     }
     localMean = acc / 16.0;
   }
@@ -160,6 +311,16 @@ half4 main(float2 xy) {
   // Fade: matte blacks, slightly softened whites.
   c = fade * 0.12 + c * (1.0 - fade * 0.18);
 
+  // Lens character and light filters (no-ops when both modes are 0).
+  float gain = exp2(exposure);
+  if (lensMode > 0.5) {
+    c = lensLook(clamp(c, 0.0, 1.0), xy);
+    if (isLens(7.0)) c += anamorphicStreak(p, gain);
+  }
+  if (filterMode > 0.5) {
+    c = lightFilter(clamp(c, 0.0, 1.0), xy, p, gain);
+  }
+
   // Vignette, elliptical over the output frame.
   if (vignette != 0.0) {
     float2 uv = xy / outSize - 0.5;
@@ -178,6 +339,12 @@ half4 main(float2 xy) {
     float n = valueNoise(xy / cell) * 0.65 + valueNoise(xy / (cell * 0.5) + 17.0) * 0.35;
     float w = 1.0 - abs(luma(c) - 0.5) * 1.2;
     c += float3((n - 0.5) * grain * 0.16 * w);
+  }
+
+  // Circular fisheye: black outside the image circle (1px anti-aliased edge).
+  if (isLens(2.0)) {
+    float2 h = outSize * 0.5;
+    c *= clamp(min(h.x, h.y) - length(xy - h), 0.0, 1.0);
   }
 
   return half4(half3(clamp(c, 0.0, 1.0)), 1.0);

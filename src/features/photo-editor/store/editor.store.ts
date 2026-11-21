@@ -2,10 +2,12 @@ import { create } from 'zustand';
 
 import { DEFAULT_ADJUSTMENTS } from '../constants/adjustments.constants';
 import { DEFAULT_GEOMETRY, MAX_HISTORY } from '../constants/editor.constants';
+import { NO_EFFECTS } from '../constants/effects.constants';
 import { DEFAULT_FILM_ID, IDENTITY_CURVES } from '../constants/film-presets.constants';
 import type {
   AdjustmentKey,
   EditorTool,
+  EffectSelection,
   EditRecipe,
   SourcePhoto,
 } from '../types/editor.types';
@@ -13,6 +15,7 @@ import type {
 export const createDefaultRecipe = (): EditRecipe => ({
   adjustments: { ...DEFAULT_ADJUSTMENTS },
   filmId: DEFAULT_FILM_ID,
+  effects: NO_EFFECTS,
   curves: IDENTITY_CURVES,
   geometry: DEFAULT_GEOMETRY,
 });
@@ -41,9 +44,24 @@ type EditorState = {
   resetAll: () => void;
   setAdjustment: (key: AdjustmentKey, value: number) => void;
   selectFilm: (filmId: string) => void;
+  setEffects: (patch: Partial<EffectSelection>) => void;
   /** Applies color edits of another recipe, keeping this photo's geometry. */
   pasteRecipe: (recipe: EditRecipe) => void;
   setAspectId: (aspectId: string) => void;
+};
+
+/**
+ * Fills fields missing from recipes saved by older versions (album entries),
+ * so new adjustments never reach the shader as undefined.
+ */
+const withDefaults = (recipe: Partial<EditRecipe> = {}): EditRecipe => {
+  const base = createDefaultRecipe();
+  return {
+    ...base,
+    ...recipe,
+    adjustments: { ...base.adjustments, ...recipe.adjustments },
+    effects: { ...base.effects, ...recipe.effects },
+  };
 };
 
 const pushHistory = (past: EditRecipe[], recipe: EditRecipe) =>
@@ -60,7 +78,7 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
   openPhoto: (photo, initial) =>
     set({
       photo,
-      recipe: { ...createDefaultRecipe(), ...initial },
+      recipe: withDefaults(initial),
       past: [],
       future: [],
       tool: 'film',
@@ -99,11 +117,10 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
     get().apply({ adjustments: { ...get().recipe.adjustments, [key]: value } }),
   selectFilm: (filmId) =>
     get().apply({ filmId, adjustments: { ...get().recipe.adjustments, filmStrength: 100 } }),
-  pasteRecipe: (recipe) =>
-    get().apply({
-      adjustments: recipe.adjustments,
-      filmId: recipe.filmId,
-      curves: recipe.curves,
-    }),
+  setEffects: (patch) => get().apply({ effects: { ...get().recipe.effects, ...patch } }),
+  pasteRecipe: (recipe) => {
+    const { adjustments, filmId, effects, curves } = withDefaults(recipe);
+    get().apply({ adjustments, filmId, effects, curves });
+  },
   setAspectId: (aspectId) => set({ aspectId }),
 }));

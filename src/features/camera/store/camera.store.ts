@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import { DEFAULT_FILM_ID } from '@/features/photo-editor';
+import { DEFAULT_FILM_ID, NO_EFFECTS, type EffectSelection } from '@/features/photo-editor';
 import { zustandMMKVStorage } from '@/shared/services/storage.service';
 
 import { DEFAULT_ASPECT_ID, DEFAULT_EXPOSURE, FLASH_ORDER } from '../constants/camera.constants';
@@ -17,6 +17,8 @@ import type {
 
 type CameraState = {
   filmId: string;
+  /** Lens simulation / light filter shown live and rendered into captures. */
+  effects: EffectSelection;
   flashMode: FlashMode;
   facing: CameraFacing;
   mode: CaptureMode;
@@ -43,6 +45,7 @@ type CameraState = {
   /** Session only: stage timings of the last capture. */
   lastTimings: CaptureTimings | null;
   setFilm: (filmId: string) => void;
+  setEffects: (patch: Partial<EffectSelection>) => void;
   cycleFlash: () => void;
   flipFacing: () => void;
   setMode: (mode: CaptureMode) => void;
@@ -64,6 +67,7 @@ export const useCameraStore = create<CameraState>()(
   persist(
     (set, get) => ({
       filmId: DEFAULT_FILM_ID,
+      effects: NO_EFFECTS,
       flashMode: 'off',
       facing: 'back',
       mode: 'auto',
@@ -80,6 +84,7 @@ export const useCameraStore = create<CameraState>()(
       showPerfHud: false,
       lastTimings: null,
       setFilm: (filmId) => set({ filmId }),
+      setEffects: (patch) => set((s) => ({ effects: { ...s.effects, ...patch } })),
       cycleFlash: () => {
         const index = FLASH_ORDER.indexOf(get().flashMode);
         set({ flashMode: FLASH_ORDER[(index + 1) % FLASH_ORDER.length] });
@@ -109,6 +114,7 @@ export const useCameraStore = create<CameraState>()(
       storage: createJSONStorage(() => zustandMMKVStorage),
       partialize: (s) => ({
         filmId: s.filmId,
+        effects: s.effects,
         flashMode: s.flashMode,
         facing: s.facing,
         mode: s.mode,

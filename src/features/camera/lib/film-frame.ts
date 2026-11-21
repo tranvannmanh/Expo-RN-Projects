@@ -8,6 +8,7 @@ import {
   buildUniforms,
   flattenUniforms,
   photoEffect,
+  type EffectSelection,
   type FilmPreset,
 } from '@/features/photo-editor';
 
@@ -32,13 +33,18 @@ export type FrameRenderer = (
  * SkSL film pipeline used by the editor and export, so the live preview
  * matches the saved photo.
  */
-export function createFilmFrameRenderer(film: FilmPreset, lut: SkImage): FrameRenderer {
+export function createFilmFrameRenderer(
+  film: FilmPreset,
+  lut: SkImage,
+  effects: EffectSelection,
+): FrameRenderer {
   const base = buildUniforms(DEFAULT_ADJUSTMENTS, {
     film,
     outSize: { width: 1, height: 1 },
     bypass: false,
     detailScale: 1,
     hasUserCurve: false,
+    effects,
   });
 
   return (frame, render) => {

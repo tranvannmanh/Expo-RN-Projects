@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 
-import { getFilmPreset, useCurveLut } from '@/features/photo-editor';
+import { getFilmPreset, useCurveLut, type EffectSelection } from '@/features/photo-editor';
 
 import { createFilmFrameRenderer } from '../lib/film-frame';
 
-/** Frame worklet for the selected film; rebuilt only when the film changes. */
-export function useFilmFrameRenderer(filmId: string) {
+/** Frame worklet for the selected film and effects; rebuilt only when they change. */
+export function useFilmFrameRenderer(filmId: string, effects: EffectSelection) {
   const film = getFilmPreset(filmId);
   const { lut } = useCurveLut(film);
-  return useMemo(() => (lut ? createFilmFrameRenderer(film, lut) : null), [film, lut]);
+  return useMemo(() => (lut ? createFilmFrameRenderer(film, lut, effects) : null), [film, lut, effects]);
 }

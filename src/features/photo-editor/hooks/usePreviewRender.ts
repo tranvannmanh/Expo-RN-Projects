@@ -4,13 +4,14 @@ import { useDerivedValue, type SharedValue } from 'react-native-reanimated';
 import { EditorLayout } from '../constants/layout.constants';
 import { fitContain, imageMatrix, outputSize } from '../lib/geometry';
 import { buildUniforms } from '../lib/uniforms';
-import type { FilmPreset } from '../types/editor.types';
+import type { EffectSelection, FilmPreset } from '../types/editor.types';
 import type { EditorSharedValues } from './useEditorSharedValues';
 import type { Viewport } from './useViewportGestures';
 
 type PreviewRenderInput = {
   image: SkImage;
   film: FilmPreset;
+  effects: EffectSelection;
   hasUserCurve: boolean;
   cropMode: boolean;
   canvasSize: SharedValue<SkSize>;
@@ -22,6 +23,7 @@ type PreviewRenderInput = {
 export function usePreviewRender({
   image,
   film,
+  effects,
   hasUserCurve,
   cropMode,
   canvasSize,
@@ -43,6 +45,8 @@ export function usePreviewRender({
       bypass: shared.compare.get(),
       detailScale: 1,
       hasUserCurve,
+      // Distortion would fight the crop handles, so effects are hidden while cropping.
+      effects: cropMode ? undefined : effects,
     }),
   );
 

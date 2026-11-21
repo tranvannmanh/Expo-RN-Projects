@@ -1,6 +1,7 @@
 export { PhotoCanvas } from './components/PhotoCanvas';
 export { ChipButton } from './components/ChipButton';
 export { EditorHeader } from './components/EditorHeader';
+export { EffectPicker } from './components/EffectPicker';
 export { EditorToolbar } from './components/EditorToolbar';
 export { ExportSheet } from './components/ExportSheet';
 export { FilmStrip } from './components/FilmStrip';
@@ -9,6 +10,7 @@ export { ToolPanel } from './components/ToolPanel';
 export { DEFAULT_ADJUSTMENTS } from './constants/adjustments.constants';
 export { THUMB_MAX_EDGE } from './constants/editor.constants';
 export { DEFAULT_FILM_ID, FILM_PRESETS, getFilmPreset } from './constants/film-presets.constants';
+export { NO_EFFECTS, describeEffects } from './constants/effects.constants';
 export { EditorLayout } from './constants/layout.constants';
 export { resizeImage } from './api/photo.api';
 export { useCropActions } from './hooks/useCropActions';
@@ -21,5 +23,12 @@ export { photoEffect } from './lib/photo.shader';
 export { buildUniforms, flattenUniforms } from './lib/uniforms';
 export { createDefaultRecipe, useEditorStore } from './store/editor.store';
 export { useEditorSettingsStore } from './store/editor-settings.store';
-export type { AndroidIcon, EditRecipe, FilmPreset, Geometry, SourcePhoto } from './types/editor.types';
+export type {
+  AndroidIcon,
+  EditRecipe,
+  EffectSelection,
+  FilmPreset,
+  Geometry,
+  SourcePhoto,
+} from './types/editor.types';
 export type { ExportResult } from './lib/export-photo';

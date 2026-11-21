@@ -27,6 +27,7 @@ export default function EditorScreen() {
   const tool = useEditorStore((s) => s.tool);
   const filmId = useEditorStore((s) => s.recipe.filmId);
   const curves = useEditorStore((s) => s.recipe.curves);
+  const effects = useEditorStore((s) => s.recipe.effects);
   const [exportVisible, setExportVisible] = useState(false);
   const addToLibrary = useAddToLibrary();
 
@@ -55,6 +56,7 @@ export default function EditorScreen() {
             image={images.data.preview}
             lut={lut}
             film={film}
+            effects={effects}
             hasUserCurve={hasUserCurve}
             cropMode={tool === 'crop'}
             aspect={cropActions.aspect}

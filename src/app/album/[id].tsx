@@ -7,7 +7,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { EditorColors, Spacing } from '@/constants/theme';
 import { ORIGIN_LABELS, useLibraryPhoto, usePhotoActions } from '@/features/library';
-import { EditorLayout, IconButton, getFilmPreset, useEditorStore } from '@/features/photo-editor';
+import {
+  EditorLayout,
+  IconButton,
+  NO_EFFECTS,
+  describeEffects,
+  getFilmPreset,
+  useEditorStore,
+} from '@/features/photo-editor';
 
 const formatDate = (ms: number) =>
   new Date(ms).toLocaleString('vi-VN', { dateStyle: 'medium', timeStyle: 'short' });
@@ -48,6 +55,8 @@ export default function PhotoDetailScreen() {
     formatDate(photo.createdAt),
     `${photo.width}×${photo.height}`,
     film,
+    // Entries saved before effects existed have no `effects` in their recipe.
+    describeEffects({ ...NO_EFFECTS, ...photo.recipe?.effects }),
     ORIGIN_LABELS[photo.origin],
   ].filter(Boolean);
 

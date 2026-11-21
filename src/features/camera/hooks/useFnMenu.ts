@@ -1,4 +1,4 @@
-import { getFilmPreset } from '@/features/photo-editor';
+import { describeEffects, getFilmPreset } from '@/features/photo-editor';
 
 import { CAPTURE_MODES, FLASH_ICONS, MODE_PARAMS } from '../constants/camera.constants';
 import { formatEv, formatShutter } from '../lib/exposure';
@@ -31,6 +31,7 @@ const ON = 'ON';
 /** Tiles of the Fn grid, in Sony-like order: exposure first, then camera toggles. */
 export function useFnMenu(input: FnMenuInput): FnItem[] {
   const filmId = useCameraStore((s) => s.filmId);
+  const effects = useCameraStore((s) => s.effects);
   const flashMode = useCameraStore((s) => s.flashMode);
   const facing = useCameraStore((s) => s.facing);
   const showGrid = useCameraStore((s) => s.showGrid);
@@ -75,6 +76,12 @@ export function useFnMenu(input: FnMenuInput): FnItem[] {
       icon: 'photo_filter',
       value: getFilmPreset(filmId).name,
       onPress: () => openPanel('filmPicker'),
+    },
+    {
+      id: 'effects',
+      icon: 'camera',
+      value: describeEffects(effects) ?? OFF,
+      onPress: () => openPanel('effects'),
     },
     {
       id: 'grid',

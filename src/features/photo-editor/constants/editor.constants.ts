@@ -59,6 +59,7 @@ export const ASPECT_RATIOS: AspectRatioOption[] = [
 
 export const EDITOR_TOOLS: { id: EditorTool; label: string; icon: AndroidIcon }[] = [
   { id: 'film', label: 'Film', icon: 'photo_filter' },
+  { id: 'effects', label: 'Hiệu ứng', icon: 'camera' },
   { id: 'adjust', label: 'Chỉnh', icon: 'tune' },
   { id: 'curve', label: 'Curve', icon: 'show_chart' },
   { id: 'crop', label: 'Cắt', icon: 'crop' },

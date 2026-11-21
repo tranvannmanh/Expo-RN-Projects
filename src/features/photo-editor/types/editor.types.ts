@@ -18,7 +18,9 @@ export type AdjustmentKey =
   | 'vignette'
   | 'grain'
   | 'grainSize'
-  | 'filmStrength';
+  | 'filmStrength'
+  | 'lensAmount'
+  | 'filterAmount';
 
 export type Adjustments = Record<AdjustmentKey, number>;
 
@@ -77,9 +79,36 @@ export type Geometry = {
   crop: CropRect;
 };
 
+/** Optical lens simulations (distortion, blur, aberration). */
+export type LensEffectId =
+  | 'none'
+  | 'fisheye'
+  | 'circular'
+  | 'tiltShift'
+  | 'zoomBurst'
+  | 'vintage'
+  | 'toy'
+  | 'anamorphic';
+
+/** Light filters screwed in front of the lens (glow, flare, leaks). */
+export type LightFilterId = 'none' | 'proMist' | 'halation' | 'prism' | 'lightLeak';
+
+export type EffectSelection = {
+  lens: LensEffectId;
+  filter: LightFilterId;
+};
+
+export type EffectOption<T extends string> = {
+  id: T;
+  label: string;
+  /** Effect index understood by the shader (0 = off). */
+  mode: number;
+};
+
 export type EditRecipe = {
   adjustments: Adjustments;
   filmId: string;
+  effects: EffectSelection;
   curves: CurveSet;
   geometry: Geometry;
 };
@@ -90,7 +119,7 @@ export type SourcePhoto = {
   height: number;
 };
 
-export type EditorTool = 'film' | 'adjust' | 'curve' | 'crop';
+export type EditorTool = 'film' | 'effects' | 'adjust' | 'curve' | 'crop';
 
 export type AspectRatioOption = {
   id: string;
@@ -139,6 +168,10 @@ export type PhotoUniforms = {
   filmSat: number;
   filmStrength: number;
   userCurve: number;
+  lensMode: number;
+  lensAmount: number;
+  filterMode: number;
+  filterAmount: number;
 };
 
 /** Material Symbols name accepted by expo-symbols on Android. */

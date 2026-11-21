@@ -10,6 +10,7 @@ import type { EditorTool } from '../types/editor.types';
 import { AdjustPanel } from './AdjustPanel';
 import { CropPanel } from './CropPanel';
 import { CurveEditor } from './CurveEditor';
+import { EffectsPanel } from './EffectsPanel';
 import { FilmPanel } from './FilmPanel';
 
 type ToolPanelProps = {
@@ -23,6 +24,7 @@ export function ToolPanel({ tool, thumb, shared, cropActions }: ToolPanelProps) 
   return (
     <View style={styles.panel}>
       {tool === 'film' ? <FilmPanel thumb={thumb} adjustments={shared.adjustments} /> : null}
+      {tool === 'effects' ? <EffectsPanel adjustments={shared.adjustments} /> : null}
       {tool === 'adjust' ? <AdjustPanel adjustments={shared.adjustments} /> : null}
       {tool === 'curve' ? <CurveEditor /> : null}
       {tool === 'crop' ? <CropPanel geometry={shared.geometry} actions={cropActions} /> : null}

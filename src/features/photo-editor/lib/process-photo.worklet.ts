@@ -98,6 +98,7 @@ export function processPhoto(data: SkData, job: ProcessJob): ProcessResult {
     bypass: false,
     detailScale,
     hasUserCurve: job.hasUserCurve,
+    effects: recipe.effects,
   });
   const image = source.makeShaderOptions(
     TileMode.Clamp,

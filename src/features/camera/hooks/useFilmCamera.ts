@@ -27,6 +27,7 @@ import { useShutterFlash } from './useShutterFlash';
 export function useFilmCamera() {
   const router = useRouter();
   const filmId = useCameraStore((s) => s.filmId);
+  const effects = useCameraStore((s) => s.effects);
   const flashMode = useCameraStore((s) => s.flashMode);
   const facing = useCameraStore((s) => s.facing);
   const lastShot = useCameraStore((s) => s.lastShot);
@@ -54,7 +55,7 @@ export function useFilmCamera() {
   });
   const outputs = useMemo(() => [photoOutput], [photoOutput]);
   const sample = useFilmSample();
-  const onFrame = useFilmFrameRenderer(filmId);
+  const onFrame = useFilmFrameRenderer(filmId, effects);
   const exposure = useExposureControl(activeController);
   const capture = useCapturePhoto();
   const shutterFlash = useShutterFlash();
@@ -82,6 +83,7 @@ export function useFilmCamera() {
     capture.mutate({
       output: photoOutput,
       filmId,
+      effects,
       flashMode: hasFlash ? flashMode : 'off',
       exposureSeconds: expectedExposureSeconds(),
       exposureIso: expectedExposureIso(),
@@ -109,7 +111,11 @@ export function useFilmCamera() {
 
   const openLastShot = () => {
     if (!lastShot) return;
-    openPhoto(lastShot.photo, { filmId: lastShot.filmId, geometry: lastShot.geometry });
+    openPhoto(lastShot.photo, {
+      filmId: lastShot.filmId,
+      effects: lastShot.effects,
+      geometry: lastShot.geometry,
+    });
     router.push('/editor');
   };
 

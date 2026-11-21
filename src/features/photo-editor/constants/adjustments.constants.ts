@@ -4,6 +4,7 @@ import type {
   AdjustmentKey,
   Adjustments,
 } from '../types/editor.types';
+import { FILTER_AMOUNT_DEFINITION, LENS_AMOUNT_DEFINITION } from './effects.constants';
 
 const percent = (key: AdjustmentKey, label: string, min = -100): AdjustmentDefinition => ({
   key,
@@ -66,7 +67,12 @@ export const FILM_STRENGTH_DEFINITION: AdjustmentDefinition = {
   decimals: 0,
 };
 
-const ALL_DEFINITIONS = [...ADJUSTMENT_GROUPS.flatMap((g) => g.items), FILM_STRENGTH_DEFINITION];
+const ALL_DEFINITIONS = [
+  ...ADJUSTMENT_GROUPS.flatMap((g) => g.items),
+  FILM_STRENGTH_DEFINITION,
+  LENS_AMOUNT_DEFINITION,
+  FILTER_AMOUNT_DEFINITION,
+];
 
 export const DEFAULT_ADJUSTMENTS = Object.fromEntries(
   ALL_DEFINITIONS.map((d) => [d.key, d.defaultValue]),

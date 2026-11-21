@@ -8,6 +8,7 @@ import {
   createDefaultRecipe,
   exportPhoto,
   useEditorSettingsStore,
+  type EffectSelection,
 } from '@/features/photo-editor';
 import { useAddToLibrary } from '@/features/library';
 
@@ -20,6 +21,7 @@ import type { CapturedShot, FlashMode } from '../types/camera.types';
 type CaptureInput = {
   output: CameraPhotoOutput;
   filmId: string;
+  effects: EffectSelection;
   flashMode: FlashMode;
   /** Long:short ratio to crop to; undefined keeps the full sensor frame. */
   aspect?: number;
@@ -47,6 +49,7 @@ export function useCapturePhoto() {
     mutationFn: async ({
       output,
       filmId,
+      effects,
       flashMode,
       aspect,
       exposureSeconds,
@@ -66,7 +69,7 @@ export function useCapturePhoto() {
       });
       const capturedAt = Date.now();
       setSaving(true);
-      const recipe = { ...createDefaultRecipe(), filmId };
+      const recipe = { ...createDefaultRecipe(), filmId, effects };
       const saved = await exportPhoto({
         photo,
         recipe,
@@ -102,6 +105,7 @@ export function useCapturePhoto() {
       return {
         photo: { ...photo, uri: entry.sourceUri },
         filmId,
+        effects,
         geometry: saved.recipe.geometry,
         thumb: saved.thumb,
       };

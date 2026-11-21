@@ -1,4 +1,11 @@
-import type { Adjustments, FilmPreset, PhotoUniforms, Size } from '../types/editor.types';
+import { FILTER_MODES, LENS_MODES } from '../constants/effects.constants';
+import type {
+  Adjustments,
+  EffectSelection,
+  FilmPreset,
+  PhotoUniforms,
+  Size,
+} from '../types/editor.types';
 
 type UniformOptions = {
   film: FilmPreset;
@@ -7,6 +14,8 @@ type UniformOptions = {
   /** Output pixels per preview pixel; keeps sharpen / grain consistent on export. */
   detailScale: number;
   hasUserCurve: boolean;
+  /** Lens / light filter simulation; omitted = none. */
+  effects?: EffectSelection;
 };
 
 const MIN_GRAIN_CELL = 1;
@@ -48,6 +57,10 @@ export function buildUniforms(adj: Adjustments, options: UniformOptions): PhotoU
     filmSat: film.saturation,
     filmStrength,
     userCurve: options.hasUserCurve ? 1 : 0,
+    lensMode: options.effects ? (LENS_MODES[options.effects.lens] ?? 0) : 0,
+    lensAmount: p(adj.lensAmount),
+    filterMode: options.effects ? (FILTER_MODES[options.effects.filter] ?? 0) : 0,
+    filterAmount: p(adj.filterAmount),
   };
 }
 
@@ -87,5 +100,9 @@ export function flattenUniforms(u: PhotoUniforms): number[] {
     u.filmSat,
     u.filmStrength,
     u.userCurve,
+    u.lensMode,
+    u.lensAmount,
+    u.filterMode,
+    u.filterAmount,
   ];
 }

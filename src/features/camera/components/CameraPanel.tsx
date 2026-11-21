@@ -10,6 +10,7 @@ import type { CameraPanel as Panel, CaptureMode, ExposureSettings } from '../typ
 import type { FnItem } from '../types/fn.types';
 import { AspectPicker } from './AspectPicker';
 import { CameraFilmPicker } from './CameraFilmPicker';
+import { CameraEffectPicker } from './CameraEffectPicker';
 import { CameraModeBar } from './CameraModeBar';
 import { ExposureValuePicker } from './ExposureValuePicker';
 import { FnGrid } from './FnGrid';
@@ -33,6 +34,7 @@ const TITLES: Partial<Record<Panel, string>> = {
   mode: 'Chế độ chụp',
   filmPicker: 'Màu phim',
   aspect: 'Tỷ lệ khung hình',
+  effects: 'Hiệu ứng ống kính',
 };
 
 /**
@@ -53,6 +55,8 @@ export function CameraPanel(props: CameraPanelProps) {
         return <FnGrid items={props.fnItems} />;
       case 'aspect':
         return <AspectPicker />;
+      case 'effects':
+        return <CameraEffectPicker />;
       case 'mode':
         return (
           <CameraModeBar

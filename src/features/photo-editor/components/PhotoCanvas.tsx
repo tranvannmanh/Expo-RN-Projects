@@ -8,7 +8,7 @@ import { EditorColors } from '@/constants/theme';
 import type { EditorSharedValues } from '../hooks/useEditorSharedValues';
 import { usePreviewRender } from '../hooks/usePreviewRender';
 import { useViewportGestures } from '../hooks/useViewportGestures';
-import type { FilmPreset } from '../types/editor.types';
+import type { EffectSelection, FilmPreset } from '../types/editor.types';
 import { CropOverlay } from './CropOverlay';
 import { PhotoRenderNode } from './PhotoRenderNode';
 
@@ -16,6 +16,7 @@ type PhotoCanvasProps = {
   image: SkImage;
   lut: SkImage;
   film: FilmPreset;
+  effects: EffectSelection;
   hasUserCurve: boolean;
   cropMode: boolean;
   aspect: number | null;
@@ -27,6 +28,7 @@ export function PhotoCanvas({
   image,
   lut,
   film,
+  effects,
   hasUserCurve,
   cropMode,
   aspect,
@@ -38,6 +40,7 @@ export function PhotoCanvas({
   const render = usePreviewRender({
     image,
     film,
+    effects,
     hasUserCurve,
     cropMode,
     canvasSize,
