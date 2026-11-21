@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { APP_VERSION } from '@/constants/app-info';
 import {
 	Colors,
 	MaxContentWidth,
@@ -39,10 +40,10 @@ export default function StudioScreen() {
 						contentFit="cover"
 					/>
 					<ThemedText type="subtitle">Film-Photo Pro</ThemedText>
-					<ThemedText themeColor="textSecondary" style={styles.centerText}>
+					{/* <ThemedText themeColor="textSecondary" style={styles.centerText}>
 						Giả lập màu phim, chỉnh sáng/tối, curve, cắt xoay — xử lý trực tiếp
 						trên GPU.
-					</ThemedText>
+					</ThemedText> */}
 				</ThemedView>
 
 				<Pressable
@@ -116,12 +117,24 @@ export default function StudioScreen() {
 						{picker.error.message}
 					</ThemedText>
 				) : null}
+
+				<ThemedText
+					type="small"
+					themeColor="textSecondary"
+					style={styles.version}
+				>
+					{`Phiên bản ${APP_VERSION}`}
+				</ThemedText>
 			</SafeAreaView>
 		</ThemedView>
 	);
 }
 
 const styles = StyleSheet.create({
+	version: {
+		textAlign: 'center',
+		opacity: Motion.disabledOpacity,
+	},
 	container: {
 		flex: 1,
 		flexDirection: 'row',

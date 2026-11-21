@@ -8,7 +8,6 @@ import { DEFAULT_ASPECT_ID, DEFAULT_EXPOSURE, FLASH_ORDER } from '../constants/c
 import type {
   CameraFacing,
   CapturedShot,
-  CaptureProgress,
   CaptureTimings,
   CaptureMode,
   ExposureReading,
@@ -35,8 +34,8 @@ type CameraState = {
   manualExposure: ExposureReading | null;
   /** Session only: the most recent capture (not persisted). */
   lastShot: CapturedShot | null;
-  /** Session only: long-exposure progress, null when not shown. */
-  captureProgress: CaptureProgress | null;
+  /** Session only: a long exposure is being captured / saved (shows the busy overlay). */
+  isLongCapture: boolean;
   /** Performance HUD over the viewfinder (debugging aid). */
   showPerfHud: boolean;
   /** Session only: stage timings of the last capture. */
@@ -53,7 +52,7 @@ type CameraState = {
   setMetered: (reading: ExposureReading) => void;
   setManualExposure: (exposure: ExposureReading | null) => void;
   setLastShot: (shot: CapturedShot) => void;
-  setCaptureProgress: (progress: CaptureProgress | null) => void;
+  setLongCapture: (isLongCapture: boolean) => void;
   togglePerfHud: () => void;
   setLastTimings: (timings: CaptureTimings) => void;
 };
@@ -73,7 +72,7 @@ export const useCameraStore = create<CameraState>()(
       metered: null,
       manualExposure: null,
       lastShot: null,
-      captureProgress: null,
+      isLongCapture: false,
       showPerfHud: false,
       lastTimings: null,
       setFilm: (filmId) => set({ filmId }),
@@ -92,7 +91,7 @@ export const useCameraStore = create<CameraState>()(
         set(isAuto ? { reading, metered: reading } : { reading }),
       setMetered: (metered) => set({ metered }),
       setManualExposure: (manualExposure) => set({ manualExposure }),
-      setCaptureProgress: (captureProgress) => set({ captureProgress }),
+      setLongCapture: (isLongCapture) => set({ isLongCapture }),
       togglePerfHud: () => set((s) => ({ showPerfHud: !s.showPerfHud })),
       setLastTimings: (lastTimings) => set({ lastTimings }),
       setLastShot: (shot) => {

@@ -36,7 +36,7 @@ type CaptureInput = {
 export function useCapturePhoto() {
   const settings = useEditorSettingsStore((s) => s.exportSettings);
   const setLastShot = useCameraStore((s) => s.setLastShot);
-  const setProgress = useCameraStore((s) => s.setCaptureProgress);
+  const setLongCapture = useCameraStore((s) => s.setLongCapture);
   const setLastTimings = useCameraStore((s) => s.setLastTimings);
 
   return useMutation({
@@ -52,16 +52,10 @@ export function useCapturePhoto() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const isLong = exposureSeconds >= LONG_EXPOSURE_SECONDS;
       const startedAt = Date.now();
-      if (isLong) setProgress({ phase: 'preparing', duration: exposureSeconds });
+      // One busy overlay covers the whole long capture: settle, expose, save.
+      setLongCapture(isLong);
       const restoreExposure = await prepareExposure();
-      const photo = await capturePhoto(output, flashMode, {
-        onWillCapturePhoto: () => {
-          if (isLong) setProgress({ phase: 'exposing', duration: exposureSeconds, startedAt: Date.now() });
-        },
-        onDidCapturePhoto: () => {
-          if (isLong) setProgress({ phase: 'processing' });
-        },
-      }).finally(() => restoreExposure?.());
+      const photo = await capturePhoto(output, flashMode).finally(() => restoreExposure?.());
       const capturedAt = Date.now();
       const recipe = { ...createDefaultRecipe(), filmId };
       const saved = await exportPhoto({
@@ -80,6 +74,6 @@ export function useCapturePhoto() {
       return { photo, filmId, geometry: saved.recipe.geometry, thumb: saved.thumb };
     },
     onSuccess: setLastShot,
-    onSettled: () => setProgress(null),
+    onSettled: () => setLongCapture(false),
   });
 }

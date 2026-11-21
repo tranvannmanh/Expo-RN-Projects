@@ -1,4 +1,4 @@
-import type { CameraPhotoOutput, CapturePhotoCallbacks } from 'react-native-vision-camera';
+import type { CameraPhotoOutput } from 'react-native-vision-camera';
 
 import type { SourcePhoto } from '@/features/photo-editor';
 
@@ -8,8 +8,7 @@ import type { FlashMode } from '../types/camera.types';
 export async function capturePhoto(
   output: CameraPhotoOutput,
   flashMode: FlashMode,
-  callbacks: CapturePhotoCallbacks = {},
 ): Promise<SourcePhoto> {
-  const file = await output.capturePhotoToFile({ flashMode, enableShutterSound: true }, callbacks);
+  const file = await output.capturePhotoToFile({ flashMode, enableShutterSound: true }, {});
   return { uri: `file://${file.filePath}`, width: file.width, height: file.height };
 }

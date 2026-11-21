@@ -133,8 +133,6 @@ export const EXPOSURE_SETTLE_TOLERANCE = 0.1;
 export const MAX_SHUTTER_SECONDS = 30;
 /** Exposures at least this long (seconds) show the progress overlay. */
 export const LONG_EXPOSURE_SECONDS = 1 / 4;
-/** Refresh rate of the elapsed-time readout during a long exposure (ms). */
-export const EXPOSURE_TICK_MS = 100;
 
 /** 1/3-stop ISO values; filtered by the sensor's range at runtime. */
 export const ISO_STOPS = [
@@ -183,8 +181,10 @@ export const CameraLayout = {
   /** Width of one EV tick slot; narrow enough for ±3 EV in 1/3 steps on a phone. */
   evSlotWidth: 14,
   evLabelRowHeight: 22,
-  progressRingSize: 132,
-  progressRingStroke: 6,
+  spinnerSize: 112,
+  spinnerStroke: 5,
+  /** Arc length of the busy spinner (degrees). */
+  spinnerArc: 100,
 } as const;
 
 /** UI counter-rotation (degrees) that keeps overlays upright for each device orientation. */
@@ -193,6 +193,8 @@ export const ORIENTATION_UI_DEGREES = { up: 0, right: 90, down: 180, left: -90 }
 export const CameraMotion = {
   /** Overlay rotation when the phone is turned (ms). */
   rotate: 200,
+  /** One turn of the busy spinner (ms). */
+  spinnerTurn: 1000,
   /** White flash overlay when the shutter fires (ms). */
   shutterFlash: 220,
   focusRing: 600,
