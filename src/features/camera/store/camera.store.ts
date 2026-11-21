@@ -4,7 +4,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { DEFAULT_FILM_ID } from '@/features/photo-editor';
 import { zustandMMKVStorage } from '@/shared/services/storage.service';
 
-import { DEFAULT_EXPOSURE, FLASH_ORDER } from '../constants/camera.constants';
+import { DEFAULT_ASPECT_ID, DEFAULT_EXPOSURE, FLASH_ORDER } from '../constants/camera.constants';
 import type {
   CameraFacing,
   CapturedShot,
@@ -22,6 +22,7 @@ type CameraState = {
   exposure: ExposureSettings;
   /** Rule-of-thirds overlay on the viewfinder. */
   showGrid: boolean;
+  aspectId: string;
   /** Session only: selected lens option id (null = main lens). */
   lensId: string | null;
   /** Session only: live sensor values. */
@@ -35,6 +36,7 @@ type CameraState = {
   flipFacing: () => void;
   setMode: (mode: CaptureMode) => void;
   toggleGrid: () => void;
+  setAspect: (aspectId: string) => void;
   setExposure: (patch: Partial<ExposureSettings>) => void;
   setLens: (lensId: string | null) => void;
   setReading: (reading: ExposureReading, isAuto: boolean) => void;
@@ -51,6 +53,7 @@ export const useCameraStore = create<CameraState>()(
       mode: 'auto',
       exposure: DEFAULT_EXPOSURE,
       showGrid: false,
+      aspectId: DEFAULT_ASPECT_ID,
       lensId: null,
       reading: null,
       metered: null,
@@ -64,6 +67,7 @@ export const useCameraStore = create<CameraState>()(
         set((s) => ({ facing: s.facing === 'back' ? 'front' : 'back', lensId: null, metered: null })),
       setMode: (mode) => set({ mode }),
       toggleGrid: () => set((s) => ({ showGrid: !s.showGrid })),
+      setAspect: (aspectId) => set({ aspectId }),
       setExposure: (patch) => set((s) => ({ exposure: { ...s.exposure, ...patch } })),
       setLens: (lensId) => set({ lensId, metered: null }),
       setReading: (reading, isAuto) =>
@@ -84,6 +88,7 @@ export const useCameraStore = create<CameraState>()(
         mode: s.mode,
         exposure: s.exposure,
         showGrid: s.showGrid,
+        aspectId: s.aspectId,
       }),
     },
   ),

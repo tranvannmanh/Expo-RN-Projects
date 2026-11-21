@@ -4,7 +4,12 @@ import { usePhotoOutput, type CameraController } from 'react-native-vision-camer
 
 import { useEditorStore } from '@/features/photo-editor';
 
-import { PHOTO_QUALITY, PHOTO_RESOLUTION } from '../constants/camera.constants';
+import {
+  DEFAULT_ASPECT_ID as ASPECT_FULL_FRAME,
+  PHOTO_QUALITY,
+  PHOTO_RESOLUTION,
+  getAspectOption,
+} from '../constants/camera.constants';
 import { useCameraStore } from '../store/camera.store';
 import type { CameraPanel } from '../types/camera.types';
 import { useCameraLenses } from './useCameraLenses';
@@ -22,6 +27,7 @@ export function useFilmCamera() {
   const flashMode = useCameraStore((s) => s.flashMode);
   const facing = useCameraStore((s) => s.facing);
   const lastShot = useCameraStore((s) => s.lastShot);
+  const aspect = getAspectOption(useCameraStore((s) => s.aspectId));
   const openPhoto = useEditorStore((s) => s.openPhoto);
 
   const [controller, setController] = useState<CameraController>();
@@ -55,12 +61,18 @@ export function useFilmCamera() {
   const shoot = () => {
     if (capture.isPending) return;
     shutterFlash.fire();
-    capture.mutate({ output: photoOutput, filmId, flashMode: hasFlash ? flashMode : 'off' });
+    capture.mutate({
+      output: photoOutput,
+      filmId,
+      flashMode: hasFlash ? flashMode : 'off',
+      // 4:3 is the sensor frame itself; no crop needed.
+      aspect: aspect.id === ASPECT_FULL_FRAME ? undefined : aspect.ratio,
+    });
   };
 
   const openLastShot = () => {
     if (!lastShot) return;
-    openPhoto(lastShot.photo, { filmId: lastShot.filmId });
+    openPhoto(lastShot.photo, { filmId: lastShot.filmId, geometry: lastShot.geometry });
     router.push('/editor');
   };
 
@@ -71,6 +83,7 @@ export function useFilmCamera() {
     mode: exposure.mode,
     exposure: exposure.exposure,
     hasFlash,
+    aspect,
     isManual: exposure.isManual,
     lenses: lens.lenses,
     lensId: lens.selected?.id ?? null,
@@ -80,6 +93,7 @@ export function useFilmCamera() {
   });
 
   return {
+    aspect,
     device,
     lenses: lens.lenses,
     lensId: lens.selected?.id ?? null,

@@ -15,9 +15,9 @@ import { ThemedText } from '@/components/themed-text';
 import { EditorColors, Radius, Spacing } from '@/constants/theme';
 
 import {
-  CAMERA_ASPECT,
   CameraLayout,
   LIVE_FILM_PREVIEW,
+  PHOTO_ORIENTATION_SOURCE,
   PREVIEW_PIXEL_FORMAT,
   PREVIEW_RESOLUTION,
 } from '../constants/camera.constants';
@@ -25,6 +25,8 @@ import { useCameraFocus } from '../hooks/useCameraFocus';
 import type { FrameRenderer } from '../lib/film-frame';
 
 type FilmCameraViewProps = {
+  /** Viewfinder width / height (portrait UI: short / long edge of the crop). */
+  aspect: number;
   device: CameraDevice;
   outputs: CameraOutput[];
   onFrame: FrameRenderer;
@@ -37,14 +39,18 @@ type FilmCameraViewProps = {
 
 type Box = { width: number; height: number };
 
-/** Largest 3:4 box that fits the available space. */
-function fitBox({ width, height }: Box): Box {
-  const w = Math.min(width, height * CAMERA_ASPECT);
-  return { width: w, height: w / CAMERA_ASPECT };
+/** Largest box of the given aspect (width / height) that fits the available space. */
+function fitBox({ width, height }: Box, aspect: number): Box {
+  const w = Math.min(width, height * aspect);
+  return { width: w, height: w / aspect };
 }
 
-/** 4:3 live preview rendered through the film shader, with tap-to-focus. */
+/**
+ * Live preview rendered through the film shader, framed to the chosen aspect
+ * ratio (the 4:3 feed is center-cropped like the saved photo), with tap-to-focus.
+ */
 export function FilmCameraView({
+  aspect,
   device,
   outputs,
   onFrame,
@@ -55,7 +61,8 @@ export function FilmCameraView({
 }: FilmCameraViewProps) {
   const skiaCamera = useRef<SkiaCameraRef>(null);
   const nativeCamera = useRef<CameraRef>(null);
-  const [box, setBox] = useState<Box | null>(null);
+  const [area, setArea] = useState<Box | null>(null);
+  const box = area ? fitBox(area, aspect) : null;
   const { gesture, ringStyle } = useCameraFocus(
     (point) => (skiaCamera.current ?? nativeCamera.current)?.focusTo(point),
   );
@@ -64,7 +71,7 @@ export function FilmCameraView({
     const controller = (skiaCamera.current ?? nativeCamera.current)?.controller;
     if (controller) onController(controller);
   };
-  const onLayout = (e: LayoutChangeEvent) => setBox(fitBox(e.nativeEvent.layout));
+  const onLayout = (e: LayoutChangeEvent) => setArea(e.nativeEvent.layout);
 
   return (
     <View style={styles.area} onLayout={onLayout}>
@@ -80,6 +87,7 @@ export function FilmCameraView({
                 outputs={outputs}
                 onFrame={onFrame}
                 onStarted={onStarted}
+                orientationSource={PHOTO_ORIENTATION_SOURCE}
                 targetResolution={PREVIEW_RESOLUTION}
                 pixelFormat={PREVIEW_PIXEL_FORMAT}
               />
@@ -92,6 +100,7 @@ export function FilmCameraView({
                     isActive={isActive}
                   outputs={outputs}
                   onStarted={onStarted}
+                  orientationSource={PHOTO_ORIENTATION_SOURCE}
                   resizeMode="cover"
                 />
                 <View style={styles.notice} pointerEvents="none">

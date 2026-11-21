@@ -3,13 +3,20 @@ import { getFilmPreset } from '@/features/photo-editor';
 import { CAPTURE_MODES, FLASH_ICONS, MODE_PARAMS } from '../constants/camera.constants';
 import { formatEv, formatShutter } from '../lib/exposure';
 import { useCameraStore } from '../store/camera.store';
-import type { CameraPanel, CaptureMode, ExposureSettings, LensOption } from '../types/camera.types';
+import type {
+  AspectOption,
+  CameraPanel,
+  CaptureMode,
+  ExposureSettings,
+  LensOption,
+} from '../types/camera.types';
 import type { FnItem } from '../types/fn.types';
 
 type FnMenuInput = {
   mode: CaptureMode;
   exposure: ExposureSettings;
   hasFlash: boolean;
+  aspect: AspectOption;
   isManual: boolean;
   lenses: LensOption[];
   lensId: string | null;
@@ -97,6 +104,12 @@ export function useFnMenu(input: FnMenuInput): FnItem[] {
         const next = lenses[(lensIndex + 1) % lenses.length];
         if (next) input.selectLens(next.id);
       },
+    },
+    {
+      id: 'aspect',
+      icon: 'aspect_ratio',
+      value: input.aspect.label,
+      onPress: () => openPanel('aspect'),
     },
     {
       id: 'meter',

@@ -44,6 +44,7 @@ export default function CameraScreen() {
     }
     return (
       <FilmCameraView
+        aspect={1 / cam.aspect.ratio}
         device={cam.device}
         outputs={cam.outputs}
         onFrame={cam.onFrame}

@@ -69,6 +69,12 @@
             "minSdkVersion": 26
           }
         }
+      ],
+      [
+        "./plugins/with-apk-file-name.js",
+        {
+          "prefix": "film-photo-pro"
+        }
       ]
     ],
     "experiments": {

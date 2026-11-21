@@ -17,6 +17,8 @@ type CaptureInput = {
   output: CameraPhotoOutput;
   filmId: string;
   flashMode: FlashMode;
+  /** Long:short ratio to crop to; undefined keeps the full sensor frame. */
+  aspect?: number;
 };
 
 /**
@@ -28,17 +30,18 @@ export function useCapturePhoto() {
   const setLastShot = useCameraStore((s) => s.setLastShot);
 
   return useMutation({
-    mutationFn: async ({ output, filmId, flashMode }: CaptureInput): Promise<CapturedShot> => {
+    mutationFn: async ({ output, filmId, flashMode, aspect }: CaptureInput): Promise<CapturedShot> => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const photo = await capturePhoto(output, flashMode);
       const recipe = { ...createDefaultRecipe(), filmId };
-      const { thumb } = await exportPhoto({
+      const saved = await exportPhoto({
         photo,
         recipe,
         settings,
         thumbMaxEdge: THUMB_MAX_EDGE,
+        aspect,
       });
-      return { photo, filmId, thumb };
+      return { photo, filmId, geometry: saved.recipe.geometry, thumb: saved.thumb };
     },
     onSuccess: setLastShot,
   });

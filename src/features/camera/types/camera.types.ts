@@ -1,7 +1,7 @@
 import type { SkImage } from '@shopify/react-native-skia';
 import type { CameraDevice, FlashMode } from 'react-native-vision-camera';
 
-import type { SourcePhoto } from '@/features/photo-editor';
+import type { Geometry, SourcePhoto } from '@/features/photo-editor';
 
 export type CameraFacing = 'back' | 'front';
 
@@ -11,7 +11,16 @@ export type CaptureMode = 'auto' | 'p' | 's' | 'm';
 export type ExposureParam = 'iso' | 'shutter' | 'ev';
 
 /** What the control area under the viewfinder shows. */
-export type CameraPanel = 'film' | 'fn' | 'mode' | 'filmPicker' | ExposureParam;
+export type CameraPanel = 'film' | 'fn' | 'mode' | 'filmPicker' | 'aspect' | ExposureParam;
+
+export type AspectOption = {
+  id: string;
+  label: string;
+  /** Long edge : short edge. */
+  ratio: number;
+  /** Optional note shown under the label, e.g. the camera it comes from. */
+  hint?: string;
+};
 
 /** Sensor exposure: duration in seconds, ISO sensitivity. */
 export type ExposureReading = {
@@ -37,6 +46,8 @@ export type CapturedShot = {
   /** Unprocessed capture, reopened in the editor with the film pre-applied. */
   photo: SourcePhoto;
   filmId: string;
+  /** Crop applied when saving (aspect ratio), reused when opening in the editor. */
+  geometry: Geometry;
   /** Downscaled copy of the saved (filtered) photo. */
   thumb: SkImage | null;
 };

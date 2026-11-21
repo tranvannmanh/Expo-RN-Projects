@@ -3,13 +3,37 @@ import { CommonResolutions, type TargetVideoPixelFormat } from 'react-native-vis
 
 import type { AndroidIcon } from '@/features/photo-editor';
 
-import type { CaptureMode, ExposureParam, ExposureSettings, FlashMode } from '../types/camera.types';
+import type {
+  AspectOption,
+  CaptureMode,
+  ExposureParam,
+  ExposureSettings,
+  FlashMode,
+} from '../types/camera.types';
 
-/** Preview and photo share 4:3 so the framing on screen matches the saved shot. */
-export const CAMERA_ASPECT = 3 / 4;
+/**
+ * Frame shapes offered when shooting. The sensor captures 4:3; other ratios are
+ * a centered crop applied on save (and shown on the viewfinder).
+ */
+export const ASPECT_OPTIONS: AspectOption[] = [
+  { id: '4:3', label: '4:3', ratio: 4 / 3, hint: 'Cảm biến' },
+  { id: '3:2', label: '3:2', ratio: 3 / 2, hint: '35mm' },
+  { id: '16:9', label: '16:9', ratio: 16 / 9, hint: 'Màn ảnh rộng' },
+  { id: '1:1', label: '1:1', ratio: 1, hint: 'Vuông' },
+  { id: 'xpan', label: '65:24', ratio: 65 / 24, hint: 'XPan' },
+];
+export const DEFAULT_ASPECT_ID = '4:3';
+export const getAspectOption = (id: string): AspectOption =>
+  ASPECT_OPTIONS.find((a) => a.id === id) ?? ASPECT_OPTIONS[0];
+
 export const PREVIEW_RESOLUTION = CommonResolutions.FHD_4_3;
 export const PHOTO_RESOLUTION = CommonResolutions.UHD_4_3;
 export const PHOTO_QUALITY = 0.95;
+/**
+ * Photos follow how the phone is physically held (accelerometer), not the UI,
+ * which stays locked to portrait: a shot taken sideways is saved upright landscape.
+ */
+export const PHOTO_ORIENTATION_SOURCE = 'device' as const;
 /** YUV is accepted by every CameraX ImageAnalysis pipeline (PRIVATE is not, e.g. on emulators). */
 export const PREVIEW_PIXEL_FORMAT: TargetVideoPixelFormat = 'yuv';
 
