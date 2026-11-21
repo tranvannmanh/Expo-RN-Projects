@@ -117,7 +117,7 @@ export async function saveJpegToGallery(jpegBase64: string, exif?: ExifCopy): Pr
       }
     }
 
-    console.log(`[save] base64 ${jpegBase64.length} chars → file ${file.size} B`);
+    if (__DEV__) console.log(`[save] base64 ${jpegBase64.length} chars → file ${file.size} B`);
     await Asset.create(file.uri);
   } finally {
     file.delete();

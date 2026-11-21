@@ -7,13 +7,10 @@ import {
   readExposure,
   setExposureBias,
   wait,
-  waitForExposure,
 } from '../api/exposure.api';
 import {
   EV_LIMIT,
   EXPOSURE_POLL_MS,
-  EXPOSURE_SETTLE_POLL_MS,
-  EXPOSURE_SETTLE_TOLERANCE,
   MANUAL_MODES,
   MAX_SHUTTER_SECONDS,
   METER_SETTLE_MS,
@@ -151,14 +148,11 @@ export function useExposureControl(controller: CameraController | undefined) {
     if (!controller || target.kind !== 'manual') return null;
     const preview = previewExposure(target, { min: controller.minISO, max: controller.maxISO });
     if (preview.duration === target.duration && preview.iso === target.iso) return null;
+    // No waiting for viewfinder frames to switch: S / M require MANUAL_SENSOR, whose
+    // per-frame control applies these values to the very next request, i.e. the
+    // still capture. Waiting would queue the photo behind several long preview frames.
     await lockExposure(controller, target.duration, target.iso);
     previewGainEv.setBlocking(0);
-    await waitForExposure(controller, target.duration, {
-      tolerance: EXPOSURE_SETTLE_TOLERANCE,
-      pollMs: EXPOSURE_SETTLE_POLL_MS,
-      // A couple of long frames plus pipeline latency.
-      timeoutMs: target.duration * 3000 + METER_SETTLE_MS,
-    });
     return () => setNonce((n) => n + 1);
   };
 

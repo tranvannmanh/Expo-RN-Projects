@@ -28,6 +28,12 @@ export const getAspectOption = (id: string): AspectOption =>
   ASPECT_OPTIONS.find((a) => a.id === id) ?? ASPECT_OPTIONS[0];
 
 /**
+ * Performance HUD and its measurements (frame counters, capture timings,
+ * save logs) exist only in development builds; release builds strip them.
+ */
+export const PERF_TOOLS_ENABLED = __DEV__;
+
+/**
  * Viewfinder frames only need to match the screen (capped at 1080 px wide):
  * smaller frames keep the per-frame shader + copy cheap on any phone.
  */
@@ -124,10 +130,6 @@ export const SHUTTER_STOPS = [
  * matched with ISO and, past the sensor's max ISO, a shader gain.
  */
 export const PREVIEW_MAX_SHUTTER_SECONDS = 1 / 30;
-/** How often to check that the sensor has switched to the capture exposure (ms). */
-export const EXPOSURE_SETTLE_POLL_MS = 30;
-/** Relative tolerance when comparing the sensor's exposure to the requested one. */
-export const EXPOSURE_SETTLE_TOLERANCE = 0.1;
 
 /** Longest shutter offered; the sensor's own maximum usually applies first. */
 export const MAX_SHUTTER_SECONDS = 30;

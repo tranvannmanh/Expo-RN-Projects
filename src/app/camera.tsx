@@ -14,6 +14,7 @@ import {
   FilmCameraView,
   LensSelector,
   LongExposureOverlay,
+  PERF_TOOLS_ENABLED,
   PerfHud,
   ShutterBar,
   ViewfinderGrid,
@@ -57,7 +58,7 @@ export default function CameraScreen() {
         {showGrid ? <ViewfinderGrid /> : null}
         <LensSelector lenses={cam.lenses} selectedId={cam.lensId} onSelect={cam.selectLens} />
         <ExposureReadout />
-        <PerfHud />
+        {PERF_TOOLS_ENABLED ? <PerfHud /> : null}
         <LongExposureOverlay />
       </FilmCameraView>
     );
@@ -89,6 +90,7 @@ export default function CameraScreen() {
       <ShutterBar
         lastShot={cam.lastShot}
         isCapturing={cam.isCapturing}
+        isSaving={cam.isSaving}
         disabled={!permission.hasPermission || !cam.device}
         fnActive={cam.panel !== 'film'}
         onFn={cam.toggleFn}

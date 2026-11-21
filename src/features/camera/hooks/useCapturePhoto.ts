@@ -10,7 +10,7 @@ import {
 } from '@/features/photo-editor';
 
 import { capturePhoto } from '../api/camera.api';
-import { LONG_EXPOSURE_SECONDS } from '../constants/camera.constants';
+import { LONG_EXPOSURE_SECONDS, PERF_TOOLS_ENABLED } from '../constants/camera.constants';
 import { captureExifFallbacks } from '../lib/exif-fallbacks';
 import { useCameraStore } from '../store/camera.store';
 import type { CapturedShot, FlashMode } from '../types/camera.types';
@@ -37,6 +37,7 @@ export function useCapturePhoto() {
   const settings = useEditorSettingsStore((s) => s.exportSettings);
   const setLastShot = useCameraStore((s) => s.setLastShot);
   const setLongCapture = useCameraStore((s) => s.setLongCapture);
+  const setSaving = useCameraStore((s) => s.setSaving);
   const setLastTimings = useCameraStore((s) => s.setLastTimings);
 
   return useMutation({
@@ -52,11 +53,16 @@ export function useCapturePhoto() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const isLong = exposureSeconds >= LONG_EXPOSURE_SECONDS;
       const startedAt = Date.now();
-      // One busy overlay covers the whole long capture: settle, expose, save.
+      // The busy overlay covers only the sensor capture; saving shows on the thumbnail.
       setLongCapture(isLong);
       const restoreExposure = await prepareExposure();
-      const photo = await capturePhoto(output, flashMode).finally(() => restoreExposure?.());
+      const preparedAt = Date.now();
+      const photo = await capturePhoto(output, flashMode).finally(() => {
+        restoreExposure?.();
+        setLongCapture(false);
+      });
       const capturedAt = Date.now();
+      setSaving(true);
       const recipe = { ...createDefaultRecipe(), filmId };
       const saved = await exportPhoto({
         photo,
@@ -70,10 +76,19 @@ export function useCapturePhoto() {
           iso: exposureIso,
         }),
       });
-      setLastTimings({ captureMs: capturedAt - startedAt, ...saved.timings });
+      if (PERF_TOOLS_ENABLED) {
+        setLastTimings({
+          prepareMs: preparedAt - startedAt,
+          captureMs: capturedAt - preparedAt,
+          ...saved.timings,
+        });
+      }
       return { photo, filmId, geometry: saved.recipe.geometry, thumb: saved.thumb };
     },
     onSuccess: setLastShot,
-    onSettled: () => setLongCapture(false),
+    onSettled: () => {
+      setLongCapture(false);
+      setSaving(false);
+    },
   });
 }

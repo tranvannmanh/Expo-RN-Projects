@@ -30,6 +30,7 @@ export function useFilmCamera() {
   const flashMode = useCameraStore((s) => s.flashMode);
   const facing = useCameraStore((s) => s.facing);
   const lastShot = useCameraStore((s) => s.lastShot);
+  const isSaving = useCameraStore((s) => s.isSaving);
   const aspect = getAspectOption(useCameraStore((s) => s.aspectId));
   const openPhoto = useEditorStore((s) => s.openPhoto);
 
@@ -150,7 +151,9 @@ export function useFilmCamera() {
     shoot,
     openLastShot,
     lastShot,
-    isCapturing: capture.isPending,
+    /** The sensor is capturing (saving is reported separately). */
+    isCapturing: capture.isPending && !isSaving,
+    isSaving,
     error: capture.error?.message ?? exposure.error,
     shutterFlashStyle: shutterFlash.style,
   };

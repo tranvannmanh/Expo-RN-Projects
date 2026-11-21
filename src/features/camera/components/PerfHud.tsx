@@ -30,7 +30,7 @@ export function PerfHud() {
       ? `Cảm biến ${formatShutter(reading.duration)} · ${formatIso(reading.iso)}`
       : 'Cảm biến --',
     timings
-      ? `Chụp ${ms(timings.captureMs)} · xử lý ${ms(timings.processMs)} · lưu ${ms(timings.saveMs)}`
+      ? `Chuẩn bị ${ms(timings.prepareMs)} · chụp ${ms(timings.captureMs)} · xử lý ${ms(timings.processMs)} · lưu ${ms(timings.saveMs)}`
       : 'Chưa chụp',
   ];
 

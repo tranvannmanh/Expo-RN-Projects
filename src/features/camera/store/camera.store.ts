@@ -34,8 +34,10 @@ type CameraState = {
   manualExposure: ExposureReading | null;
   /** Session only: the most recent capture (not persisted). */
   lastShot: CapturedShot | null;
-  /** Session only: a long exposure is being captured / saved (shows the busy overlay). */
+  /** Session only: a long exposure is being captured by the sensor (busy overlay). */
   isLongCapture: boolean;
+  /** Session only: the last capture is being processed / saved (thumbnail spinner). */
+  isSaving: boolean;
   /** Performance HUD over the viewfinder (debugging aid). */
   showPerfHud: boolean;
   /** Session only: stage timings of the last capture. */
@@ -53,6 +55,7 @@ type CameraState = {
   setManualExposure: (exposure: ExposureReading | null) => void;
   setLastShot: (shot: CapturedShot) => void;
   setLongCapture: (isLongCapture: boolean) => void;
+  setSaving: (isSaving: boolean) => void;
   togglePerfHud: () => void;
   setLastTimings: (timings: CaptureTimings) => void;
 };
@@ -73,6 +76,7 @@ export const useCameraStore = create<CameraState>()(
       manualExposure: null,
       lastShot: null,
       isLongCapture: false,
+      isSaving: false,
       showPerfHud: false,
       lastTimings: null,
       setFilm: (filmId) => set({ filmId }),
@@ -92,6 +96,7 @@ export const useCameraStore = create<CameraState>()(
       setMetered: (metered) => set({ metered }),
       setManualExposure: (manualExposure) => set({ manualExposure }),
       setLongCapture: (isLongCapture) => set({ isLongCapture }),
+      setSaving: (isSaving) => set({ isSaving }),
       togglePerfHud: () => set((s) => ({ showPerfHud: !s.showPerfHud })),
       setLastTimings: (lastTimings) => set({ lastTimings }),
       setLastShot: (shot) => {

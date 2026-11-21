@@ -11,6 +11,8 @@ import type { CapturedShot } from '../types/camera.types';
 type ShutterBarProps = {
   lastShot: CapturedShot | null;
   isCapturing: boolean;
+  /** The last photo is being processed / saved: spinner over the thumbnail. */
+  isSaving: boolean;
   /** No camera or permission yet. */
   disabled: boolean;
   /** Fn menu (or a picker opened from it) is showing. */
@@ -25,6 +27,7 @@ const THUMB = CameraLayout.thumbSize;
 export function ShutterBar({
   lastShot,
   isCapturing,
+  isSaving,
   disabled,
   fnActive,
   onFn,
@@ -37,12 +40,17 @@ export function ShutterBar({
     <View style={styles.bar}>
       <Pressable
         onPress={onOpenLastShot}
-        disabled={!lastShot}
+        disabled={!lastShot || isSaving}
         style={({ pressed }) => [styles.thumb, pressed && styles.pressed]}>
         {thumb ? (
           <Canvas style={styles.thumbCanvas}>
             <Image image={thumb} x={0} y={0} width={THUMB} height={THUMB} fit="cover" />
           </Canvas>
+        ) : null}
+        {isSaving ? (
+          <View style={styles.thumbSaving}>
+            <ActivityIndicator color={EditorColors.accent} />
+          </View>
         ) : null}
       </Pressable>
 
@@ -88,6 +96,12 @@ const styles = StyleSheet.create({
     borderWidth: CameraLayout.thumbBorder,
     borderColor: EditorColors.border,
     backgroundColor: EditorColors.surfaceHigh,
+  },
+  thumbSaving: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: EditorColors.overlay,
   },
   thumbCanvas: {
     width: THUMB,

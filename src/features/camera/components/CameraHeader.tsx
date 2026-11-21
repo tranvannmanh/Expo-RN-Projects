@@ -4,7 +4,7 @@ import { ThemedText } from '@/components/themed-text';
 import { EditorColors, Motion, Spacing } from '@/constants/theme';
 import { EditorLayout, IconButton } from '@/features/photo-editor';
 
-import { CAPTURE_MODES } from '../constants/camera.constants';
+import { CAPTURE_MODES, PERF_TOOLS_ENABLED } from '../constants/camera.constants';
 import { useCameraStore } from '../store/camera.store';
 
 type CameraHeaderProps = {
@@ -26,7 +26,7 @@ export function CameraHeader({ onClose, onModePress }: CameraHeaderProps) {
       <Pressable
         hitSlop={Spacing.two}
         onPress={onModePress}
-        onLongPress={togglePerfHud}
+        onLongPress={PERF_TOOLS_ENABLED ? togglePerfHud : undefined}
         style={({ pressed }) => [styles.mode, pressed && styles.pressed]}>
         <ThemedText style={styles.modeText}>{label}</ThemedText>
       </Pressable>

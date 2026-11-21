@@ -3,6 +3,7 @@ export { CameraPanel } from './components/CameraPanel';
 export { CameraPermissionView } from './components/CameraPermissionView';
 export { ExposureReadout } from './components/ExposureReadout';
 export { FilmCameraView } from './components/FilmCameraView';
+export { PERF_TOOLS_ENABLED } from './constants/camera.constants';
 export { LensSelector } from './components/LensSelector';
 export { LongExposureOverlay } from './components/LongExposureOverlay';
 export { PerfHud } from './components/PerfHud';

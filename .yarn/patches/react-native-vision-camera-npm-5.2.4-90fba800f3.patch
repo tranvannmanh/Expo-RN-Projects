@@ -59,7 +59,7 @@ index 0000000000000000000000000000000000000000..0ae1621e6c37bcb8badce12f0303ce4a
 +  }
 +}
 diff --git a/android/src/main/java/com/margelo/nitro/camera/hybrids/HybridCameraController.kt b/android/src/main/java/com/margelo/nitro/camera/hybrids/HybridCameraController.kt
-index 337601a7029d7d354a999275e1c1860b271b6fcf..fe063d101b6d4a26c6254b9abe3f7603fe15fbfb 100644
+index 337601a7029d7d354a999275e1c1860b271b6fcf..269ff8bbce54041a2297f12d7490120f49272e17 100644
 --- a/android/src/main/java/com/margelo/nitro/camera/hybrids/HybridCameraController.kt
 +++ b/android/src/main/java/com/margelo/nitro/camera/hybrids/HybridCameraController.kt
 @@ -2,6 +2,14 @@ package com.margelo.nitro.camera.hybrids
@@ -113,7 +113,7 @@ index 337601a7029d7d354a999275e1c1860b271b6fcf..fe063d101b6d4a26c6254b9abe3f7603
          .await()
      }
    }
-@@ -300,35 +313,81 @@ class HybridCameraController(
+@@ -300,35 +313,99 @@ class HybridCameraController(
      )
    }
  
@@ -181,7 +181,7 @@ index 337601a7029d7d354a999275e1c1860b271b6fcf..fe063d101b6d4a26c6254b9abe3f7603
 +      val control = Camera2CameraControl.from(camera.cameraControl)
 +      if (duration <= 0.0 || iso <= 0.0) {
 +        isExposureManual = false
-+        control.setCaptureRequestOptions(autoExposureOptions()).await()
++        applyWithoutWaiting(control, autoExposureOptions())
 +        return@async
 +      }
 +      if (!device.supportsExposureLocking) {
@@ -197,8 +197,26 @@ index 337601a7029d7d354a999275e1c1860b271b6fcf..fe063d101b6d4a26c6254b9abe3f7603
 +          .setCaptureRequestOption(CaptureRequest.SENSOR_FRAME_DURATION, exposureNs)
 +          .build()
 +      isExposureManual = true
-+      control.setCaptureRequestOptions(options).await()
++      applyWithoutWaiting(control, options)
 +    }
++  }
++
++  /**
++   * [Film Studio patch] The options are written into CameraX's request config
++   * synchronously; the returned future only completes once a frame with them
++   * has finished. Not waiting lets a still capture issued right after carry the
++   * new exposure while the camera queue still holds short viewfinder frames,
++   * instead of queuing behind several long ones (≈ queue depth × exposure).
++   */
++  private fun applyWithoutWaiting(control: Camera2CameraControl, options: CaptureRequestOptions) {
++    val future = control.setCaptureRequestOptions(options)
++    future.addListener({
++      try {
++        future.get()
++      } catch (e: Exception) {
++        Log.w("VisionCamera", "Applying capture request options failed", e)
++      }
++    }, Runnable::run)
    }
  
    override fun lockCurrentExposure(): Promise<Unit> {
@@ -210,7 +228,7 @@ index 337601a7029d7d354a999275e1c1860b271b6fcf..fe063d101b6d4a26c6254b9abe3f7603
    }
  
    // TODO: Once CameraX implements locking AWB to custom White Balance Gains, implement this:
-@@ -355,4 +414,9 @@ class HybridCameraController(
+@@ -355,4 +432,9 @@ class HybridCameraController(
          "You can use AWB metering locks (`focusTo(point, { modes: ['AWB'], adaptiveness: 'locked' })`) instead.",
      )
    }

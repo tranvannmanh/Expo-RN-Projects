@@ -7,6 +7,9 @@ export type CameraFacing = 'back' | 'front';
 
 /** Stage durations of the last capture (ms), shown in the performance HUD. */
 export type CaptureTimings = {
+  /** Switching the sensor to the capture exposure (S / M). */
+  prepareMs: number;
+  /** Sensor capture + camera JPEG written to disk. */
   captureMs: number;
   processMs: number;
   saveMs: number;

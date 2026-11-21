@@ -11,6 +11,8 @@ import {
   type FilmPreset,
 } from '@/features/photo-editor';
 
+import { PERF_TOOLS_ENABLED } from '../constants/camera.constants';
+
 /**
  * Viewfinder counters written on the camera thread and read (then reset) by the
  * performance HUD: frames rendered and total time spent rendering them.
@@ -41,7 +43,7 @@ export function createFilmFrameRenderer(film: FilmPreset, lut: SkImage): FrameRe
 
   return (frame, render) => {
     'worklet';
-    const startedAt = performance.now();
+    const startedAt = PERF_TOOLS_ENABLED ? performance.now() : 0;
     render(({ canvas, frameTexture }) => {
       const width = frameTexture.width();
       const height = frameTexture.height();
@@ -66,8 +68,10 @@ export function createFilmFrameRenderer(film: FilmPreset, lut: SkImage): FrameRe
       paint.setShader(photoEffect.makeShaderWithChildren(uniforms, [image, curves]));
       canvas.drawRect(Skia.XYWHRect(0, 0, width, height), paint);
     });
-    const elapsed = performance.now() - startedAt;
-    frameStats.setBlocking((s) => ({ frames: s.frames + 1, renderMs: s.renderMs + elapsed }));
+    if (PERF_TOOLS_ENABLED) {
+      const elapsed = performance.now() - startedAt;
+      frameStats.setBlocking((s) => ({ frames: s.frames + 1, renderMs: s.renderMs + elapsed }));
+    }
     frame.dispose();
   };
 }
