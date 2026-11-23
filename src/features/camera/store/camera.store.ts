@@ -4,7 +4,12 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { DEFAULT_FILM_ID, NO_EFFECTS, type EffectSelection } from '@/features/photo-editor';
 import { zustandMMKVStorage } from '@/shared/services/storage.service';
 
-import { DEFAULT_ASPECT_ID, DEFAULT_EXPOSURE, FLASH_ORDER } from '../constants/camera.constants';
+import {
+  DEFAULT_ASPECT_ID,
+  DEFAULT_EXPOSURE,
+  FLASH_ORDER,
+  SELF_TIMER_ORDER,
+} from '../constants/camera.constants';
 import type {
   CameraFacing,
   CapturedShot,
@@ -13,6 +18,7 @@ import type {
   ExposureReading,
   ExposureSettings,
   FlashMode,
+  SelfTimer,
 } from '../types/camera.types';
 
 type CameraState = {
@@ -20,6 +26,8 @@ type CameraState = {
   /** Lens simulation / light filter shown live and rendered into captures. */
   effects: EffectSelection;
   flashMode: FlashMode;
+  /** Delay between the shutter press and the capture (0 = off). */
+  selfTimer: SelfTimer;
   facing: CameraFacing;
   mode: CaptureMode;
   exposure: ExposureSettings;
@@ -47,13 +55,14 @@ type CameraState = {
   setFilm: (filmId: string) => void;
   setEffects: (patch: Partial<EffectSelection>) => void;
   cycleFlash: () => void;
+  cycleSelfTimer: () => void;
   flipFacing: () => void;
   setMode: (mode: CaptureMode) => void;
   toggleGrid: () => void;
   setAspect: (aspectId: string) => void;
   setExposure: (patch: Partial<ExposureSettings>) => void;
   setLens: (lensId: string | null) => void;
-  setReading: (reading: ExposureReading, isAuto: boolean) => void;
+  setReading: (reading: ExposureReading) => void;
   setMetered: (reading: ExposureReading) => void;
   setManualExposure: (exposure: ExposureReading | null) => void;
   setLastShot: (shot: CapturedShot) => void;
@@ -69,6 +78,7 @@ export const useCameraStore = create<CameraState>()(
       filmId: DEFAULT_FILM_ID,
       effects: NO_EFFECTS,
       flashMode: 'off',
+      selfTimer: 0,
       facing: 'back',
       mode: 'auto',
       exposure: DEFAULT_EXPOSURE,
@@ -89,6 +99,10 @@ export const useCameraStore = create<CameraState>()(
         const index = FLASH_ORDER.indexOf(get().flashMode);
         set({ flashMode: FLASH_ORDER[(index + 1) % FLASH_ORDER.length] });
       },
+      cycleSelfTimer: () => {
+        const index = SELF_TIMER_ORDER.indexOf(get().selfTimer);
+        set({ selfTimer: SELF_TIMER_ORDER[(index + 1) % SELF_TIMER_ORDER.length] });
+      },
       flipFacing: () =>
         set((s) => ({ facing: s.facing === 'back' ? 'front' : 'back', lensId: null, metered: null })),
       setMode: (mode) => set({ mode }),
@@ -96,8 +110,7 @@ export const useCameraStore = create<CameraState>()(
       setAspect: (aspectId) => set({ aspectId }),
       setExposure: (patch) => set((s) => ({ exposure: { ...s.exposure, ...patch } })),
       setLens: (lensId) => set({ lensId, metered: null }),
-      setReading: (reading, isAuto) =>
-        set(isAuto ? { reading, metered: reading } : { reading }),
+      setReading: (reading) => set({ reading }),
       setMetered: (metered) => set({ metered }),
       setManualExposure: (manualExposure) => set({ manualExposure }),
       setLongCapture: (isLongCapture) => set({ isLongCapture }),
@@ -116,6 +129,7 @@ export const useCameraStore = create<CameraState>()(
         filmId: s.filmId,
         effects: s.effects,
         flashMode: s.flashMode,
+        selfTimer: s.selfTimer,
         facing: s.facing,
         mode: s.mode,
         exposure: s.exposure,

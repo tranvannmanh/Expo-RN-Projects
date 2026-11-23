@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { EditorColors, Motion, Spacing } from '@/constants/theme';
+import { EditorColors, Motion, Radius, Spacing } from '@/constants/theme';
 
 import { CAPTURE_MODES, MANUAL_UNSUPPORTED_NOTE } from '../constants/camera.constants';
 import type { CaptureMode } from '../types/camera.types';
@@ -20,25 +20,28 @@ export function CameraModeBar({ mode, canManual, canBias, onChange }: CameraMode
 
   return (
     <View style={styles.container}>
-      <View style={styles.bar}>
-        {CAPTURE_MODES.map((m) => {
+      <View style={styles.bar} accessibilityRole="radiogroup">
+        {CAPTURE_MODES.map((m, i) => {
           const available = isAvailable(m.id);
           const selected = m.id === mode;
           return (
             <Pressable
               key={m.id}
               disabled={!available}
-              hitSlop={Spacing.one}
               onPress={() => onChange(m.id)}
+              accessibilityRole="radio"
+              accessibilityState={{ selected, disabled: !available }}
+              accessibilityLabel={m.name}
               style={({ pressed }) => [
                 styles.item,
+                i > 0 && styles.divider,
+                selected && styles.itemSelected,
                 !available && styles.disabled,
-                pressed && styles.pressed,
+                pressed && !selected && styles.itemPressed,
               ]}>
-              <ThemedText type="smallBold" style={selected ? styles.selected : styles.label}>
+              <ThemedText type="smallBold" style={selected ? styles.labelSelected : styles.label}>
                 {m.label}
               </ThemedText>
-              <View style={[styles.dot, selected && styles.dotSelected]} />
             </Pressable>
           );
         })}
@@ -62,15 +65,19 @@ export function CameraModeBar({ mode, canManual, canBias, onChange }: CameraMode
   );
 }
 
-const DOT = 4;
+const SEGMENT_WIDTH = 68;
+const SEGMENT_HEIGHT = 34;
+const OUTLINE = StyleSheet.hairlineWidth * 3;
+/** Outline, dividers and the active segment share one color. */
+const OUTLINE_COLOR = EditorColors.textMuted;
 
 const styles = StyleSheet.create({
   container: {
-    gap: Spacing.two,
+    gap: Spacing.one + Spacing.half,
   },
   caption: {
     alignItems: 'center',
-    gap: Spacing.half,
+    gap: 0,
     paddingHorizontal: Spacing.four,
   },
   captionTitle: {
@@ -85,34 +92,39 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
   },
+  // Segmented control: one outlined capsule split by thin dividers; the active segment is filled.
   bar: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: Spacing.five,
+    alignSelf: 'center',
+    borderRadius: Radius.pill,
+    borderWidth: OUTLINE,
+    borderColor: OUTLINE_COLOR,
+    overflow: 'hidden',
   },
   item: {
+    minWidth: SEGMENT_WIDTH,
+    height: SEGMENT_HEIGHT,
     alignItems: 'center',
-    gap: Spacing.one,
-    paddingHorizontal: Spacing.one,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.three,
+  },
+  divider: {
+    borderLeftWidth: OUTLINE,
+    borderLeftColor: OUTLINE_COLOR,
+  },
+  itemSelected: {
+    backgroundColor: OUTLINE_COLOR,
+  },
+  itemPressed: {
+    backgroundColor: EditorColors.surfaceHigh,
   },
   label: {
-    color: EditorColors.textMuted,
+    color: EditorColors.text,
   },
-  selected: {
-    color: EditorColors.accent,
-  },
-  dot: {
-    width: DOT,
-    height: DOT,
-    borderRadius: DOT / 2,
-  },
-  dotSelected: {
-    backgroundColor: EditorColors.accent,
+  labelSelected: {
+    color: EditorColors.accentText,
   },
   disabled: {
     opacity: Motion.disabledOpacity,
-  },
-  pressed: {
-    opacity: Motion.pressedOpacity,
   },
 });

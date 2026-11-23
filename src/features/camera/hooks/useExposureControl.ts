@@ -3,6 +3,7 @@ import type { CameraController } from 'react-native-vision-camera';
 
 import {
   releaseExposure,
+  lockCaptureExposure,
   lockExposure,
   readExposure,
   setExposureBias,
@@ -69,7 +70,8 @@ export function useExposureControl(controller: CameraController | undefined) {
   );
 
   const target: Target = useMemo(() => {
-    if (!isManual) return { kind: 'auto', bias: mode === 'p' && canBias ? exposure.ev : 0 };
+    // AUTO / P (and S / M on a lens without manual control): auto exposure + EV compensation.
+    if (!isManual) return { kind: 'auto', bias: canBias ? exposure.ev : 0 };
     if (mode === 'm') return { kind: 'manual', duration: exposure.shutter, iso: exposure.iso };
     if (!metered || !controller) return { kind: 'meter' };
     const range = { min: controller.minISO, max: controller.maxISO };
@@ -81,15 +83,21 @@ export function useExposureControl(controller: CameraController | undefined) {
   }, [isManual, mode, canBias, exposure, metered, controller]);
   const targetKey = JSON.stringify(target);
 
+  // EV compensation the sensor currently runs with (auto exposure only).
+  const appliedBias = target.kind === 'auto' ? target.bias : 0;
+
   // Live readout (and auto reference while AE runs).
   useEffect(() => {
     if (!controller) return;
     const id = setInterval(() => {
       const reading = readExposure(controller);
-      if (reading) setReading(reading, !isManual);
+      if (!reading) return;
+      setReading(reading);
+      // The S / M reference is the neutral metering: remove the EV the user dialed in AUTO / P.
+      if (!isManual) setMetered({ ...reading, iso: reading.iso * 2 ** -appliedBias });
     }, EXPOSURE_POLL_MS);
     return () => clearInterval(id);
-  }, [controller, isManual, setReading]);
+  }, [controller, isManual, appliedBias, setReading, setMetered]);
 
   // Push the target exposure to the sensor.
   useEffect(() => {
@@ -97,21 +105,23 @@ export function useExposureControl(controller: CameraController | undefined) {
     let cancelled = false;
     const target = JSON.parse(targetKey) as Target;
     const apply = async () => {
-      if (target.kind !== 'manual') {
-        previewGainEv.setBlocking(0);
-        setManualExposure(null);
-      }
+      // The viewfinder gain belongs to the sensor values it compensates: it changes
+      // only when the camera has taken them, so dragging a dial doesn't flicker.
+      const resetGain = () => previewGainEv.setBlocking(0);
+      if (target.kind !== 'manual') setManualExposure(null);
       if (target.kind === 'auto') {
-        await releaseExposure(controller);
+        await releaseExposure(controller, resetGain);
         await setExposureBias(controller, target.bias);
       } else if (target.kind === 'manual') {
         // The viewfinder simulates the capture exposure at a fluid frame rate.
         const preview = previewExposure(target, { min: controller.minISO, max: controller.maxISO });
         setManualExposure({ duration: target.duration, iso: target.iso });
-        previewGainEv.setBlocking(preview.gainEv);
-        await lockExposure(controller, preview.duration, preview.iso);
+        await lockExposure(controller, preview.duration, preview.iso, () =>
+          previewGainEv.setBlocking(preview.gainEv),
+        );
       } else {
-        await releaseExposure(controller);
+        await releaseExposure(controller, resetGain);
+        await setExposureBias(controller, 0);
         await wait(METER_SETTLE_MS);
         const reading = readExposure(controller);
         if (reading && !cancelled) setMetered(reading);
@@ -151,7 +161,7 @@ export function useExposureControl(controller: CameraController | undefined) {
     // No waiting for viewfinder frames to switch: S / M require MANUAL_SENSOR, whose
     // per-frame control applies these values to the very next request, i.e. the
     // still capture. Waiting would queue the photo behind several long preview frames.
-    await lockExposure(controller, target.duration, target.iso);
+    await lockCaptureExposure(controller, target.duration, target.iso);
     previewGainEv.setBlocking(0);
     return () => setNonce((n) => n + 1);
   };
@@ -159,7 +169,8 @@ export function useExposureControl(controller: CameraController | undefined) {
   /** Re-reads the scene with auto exposure, then re-applies S / M. */
   const remeter = async () => {
     if (!controller) return;
-    await releaseExposure(controller);
+    await releaseExposure(controller, () => previewGainEv.setBlocking(0));
+    await setExposureBias(controller, 0);
     await wait(METER_SETTLE_MS);
     const reading = readExposure(controller);
     if (reading) setMetered(reading);

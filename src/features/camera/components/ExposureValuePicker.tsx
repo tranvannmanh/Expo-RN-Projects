@@ -1,4 +1,4 @@
-import { formatIso, formatShutter, nearest } from '../lib/exposure';
+import { formatIso, formatShutterValue, nearest } from '../lib/exposure';
 import type { ExposureParam } from '../types/camera.types';
 import { EvScale } from './EvScale';
 import { StopDial } from './StopDial';
@@ -16,7 +16,7 @@ const DIAL_LABEL: Record<Exclude<ExposureParam, 'ev'>, string> = {
 };
 
 const DIAL_FORMAT: Record<Exclude<ExposureParam, 'ev'>, (v: number) => string> = {
-  shutter: formatShutter,
+  shutter: formatShutterValue,
   iso: (v) => formatIso(v).replace('ISO ', ''),
 };
 

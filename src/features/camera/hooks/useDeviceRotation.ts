@@ -19,3 +19,9 @@ export function useDeviceRotation() {
   const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${degrees.get()}deg` }] }));
   return { orientation, style };
 }
+
+/** The phone is held sideways (the UI itself stays portrait). */
+export function useIsLandscape() {
+  const orientation = useOrientation('device') ?? 'up';
+  return orientation === 'left' || orientation === 'right';
+}

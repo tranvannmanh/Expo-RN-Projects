@@ -22,6 +22,7 @@ import { useFilmSample } from './useFilmSample';
 import { useFnMenu } from './useFnMenu';
 import { useHardwareShutter } from './useHardwareShutter';
 import { useShutterFlash } from './useShutterFlash';
+import { useSelfTimer } from './useSelfTimer';
 
 /** Wires lens, exposure mode, film rendering and capture for the camera screen. */
 export function useFilmCamera() {
@@ -93,6 +94,8 @@ export function useFilmCamera() {
     });
   };
 
+  const selfTimer = useSelfTimer(shoot, isActive);
+
   /** Half-press: refocus and re-meter on the center, like a camera's AF-ON. */
   const focusCenter = () => {
     if (!activeController) return;
@@ -106,7 +109,7 @@ export function useFilmCamera() {
   useHardwareShutter({
     enabled: isActive && Boolean(device),
     onHalfPress: focusCenter,
-    onShutter: shoot,
+    onShutter: selfTimer.trigger,
   });
 
   const openLastShot = () => {
@@ -125,12 +128,8 @@ export function useFilmCamera() {
   const fnItems = useFnMenu({
     mode: exposure.mode,
     exposure: exposure.exposure,
-    hasFlash,
     aspect,
     isManual: exposure.isManual,
-    lenses: lens.lenses,
-    lensId: lens.selected?.id ?? null,
-    selectLens: lens.selectLens,
     remeter: exposure.remeter,
     openPanel: setPanel,
   });
@@ -154,7 +153,10 @@ export function useFilmCamera() {
     setPanel,
     toggleFn,
     fnItems,
-    shoot,
+    /** Shutter press: shoots, or starts / cancels the self-timer countdown. */
+    shoot: selfTimer.trigger,
+    /** Seconds left on the self-timer, null when not counting. */
+    timerRemaining: selfTimer.remaining,
     openLastShot,
     lastShot,
     /** The sensor is capturing (saving is reported separately). */

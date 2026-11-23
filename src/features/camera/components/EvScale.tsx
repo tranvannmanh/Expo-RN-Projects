@@ -84,9 +84,9 @@ export function EvScale({ values, index, onChange }: EvScaleProps) {
 
 	return (
 		<View style={styles.container}>
-			{/* <ThemedText type="smallBold" style={styles.label}>
-        EV
-      </ThemedText> */}
+			<ThemedText type="smallBold" style={styles.label}>
+				EV
+			</ThemedText>
 			<View style={styles.row}>
 				<Arrow icon="arrow_left" onPress={() => select(index - 1)} />
 				<GestureDetector gesture={gesture}>
@@ -154,7 +154,7 @@ function Arrow({
 const styles = StyleSheet.create({
 	container: {
 		alignItems: 'center',
-		backgroundColor: 'brown',
+		// backgroundColor: 'brown',
 	},
 	label: {
 		color: EditorColors.accent,

@@ -73,3 +73,6 @@ export type CapturedShot = {
 };
 
 export type { FlashMode };
+
+/** Self-timer delay in seconds (0 = off). */
+export type SelfTimer = 0 | 3 | 5 | 10;

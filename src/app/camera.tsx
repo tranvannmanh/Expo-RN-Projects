@@ -16,6 +16,7 @@ import {
   LongExposureOverlay,
   PERF_TOOLS_ENABLED,
   PerfHud,
+  SelfTimerOverlay,
   ShutterBar,
   ViewfinderGrid,
   useCameraStore,
@@ -57,9 +58,10 @@ export default function CameraScreen() {
         onController={cam.onController}>
         {showGrid ? <ViewfinderGrid /> : null}
         <LensSelector lenses={cam.lenses} selectedId={cam.lensId} onSelect={cam.selectLens} />
-        <ExposureReadout />
+        <ExposureReadout isManual={exposure.isManual} />
         {PERF_TOOLS_ENABLED ? <PerfHud /> : null}
         <LongExposureOverlay />
+        <SelfTimerOverlay remaining={cam.timerRemaining} />
       </FilmCameraView>
     );
   };
@@ -67,7 +69,12 @@ export default function CameraScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <StatusBar style="light" />
-      <CameraHeader onClose={() => router.back()} onModePress={() => cam.setPanel('mode')} />
+      <CameraHeader
+        isManual={exposure.isManual}
+        hasFlash={cam.hasFlash}
+        onClose={() => router.back()}
+        onPanel={cam.setPanel}
+      />
       <View style={styles.preview}>{renderPreview()}</View>
       {cam.error ? (
         <ThemedText type="small" numberOfLines={2} style={styles.error}>

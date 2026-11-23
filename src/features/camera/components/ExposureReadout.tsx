@@ -3,38 +3,34 @@ import { StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { EditorColors, Spacing } from '@/constants/theme';
 
-import { MANUAL_MODES } from '../constants/camera.constants';
-import { formatEv, formatIso, formatShutter, meterOffset } from '../lib/exposure';
+import { useIsLandscape } from '../hooks/useDeviceRotation';
+import { useExposureDisplay } from '../hooks/useExposureDisplay';
+import { activeParams } from '../lib/exposure';
 import { useCameraStore } from '../store/camera.store';
 
-/**
- * Sony-style info strip at the bottom of the viewfinder: live shutter, the
- * exposure value (EV comp, or the meter offset in M) and live ISO.
- */
-export function ExposureReadout() {
-  const liveReading = useCameraStore((s) => s.reading);
-  const manualExposure = useCameraStore((s) => s.manualExposure);
-  // In S / M show what the capture will use, not the faster viewfinder exposure.
-  const reading = manualExposure ?? liveReading;
-  const metered = useCameraStore((s) => s.metered);
-  const mode = useCameraStore((s) => s.mode);
-  const exposure = useCameraStore((s) => s.exposure);
+type ExposureReadoutProps = {
+  /** The lens really runs S / M manually (false on lenses without manual control). */
+  isManual: boolean;
+};
 
-  // S / M on a lens without manual control run as auto (no manual exposure applied).
-  const runsAuto = mode === 'auto' || (MANUAL_MODES.includes(mode) && !manualExposure);
-  const ev = runsAuto
-    ? 0
-    : mode === 'm'
-      ? metered
-        ? meterOffset(metered, exposure.iso, exposure.shutter)
-        : 0
-      : exposure.ev;
+/**
+ * Sony-style info strip at the bottom of the viewfinder: shutter, EV and ISO.
+ * Held sideways, shutter and ISO move to the header buttons; EV shows only in
+ * modes where it can be set (not in M).
+ */
+export function ExposureReadout({ isManual }: ExposureReadoutProps) {
+  const display = useExposureDisplay();
+  const mode = useCameraStore((s) => s.mode);
+  const showShutterIso = !useIsLandscape();
+  const showEv = activeParams(mode, isManual).includes('ev');
+
+  if (!showShutterIso && !showEv) return null;
 
   return (
     <View style={styles.bar} pointerEvents="none">
-      <ThemedText style={styles.value}>{reading ? formatShutter(reading.duration) : '--'}</ThemedText>
-      <ThemedText style={styles.value}>{formatEv(ev)}</ThemedText>
-      <ThemedText style={styles.value}>{reading ? formatIso(reading.iso) : 'ISO --'}</ThemedText>
+      {showShutterIso ? <ThemedText style={styles.value}>{display.shutter}</ThemedText> : null}
+      {showEv ? <ThemedText style={styles.value}>{display.ev}</ThemedText> : null}
+      {showShutterIso ? <ThemedText style={styles.value}>{display.iso}</ThemedText> : null}
     </View>
   );
 }

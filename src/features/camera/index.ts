@@ -7,6 +7,7 @@ export { PERF_TOOLS_ENABLED } from './constants/camera.constants';
 export { LensSelector } from './components/LensSelector';
 export { LongExposureOverlay } from './components/LongExposureOverlay';
 export { PerfHud } from './components/PerfHud';
+export { SelfTimerOverlay } from './components/SelfTimerOverlay';
 export { ShutterBar } from './components/ShutterBar';
 export { ViewfinderGrid } from './components/ViewfinderGrid';
 export { useCameraStore } from './store/camera.store';

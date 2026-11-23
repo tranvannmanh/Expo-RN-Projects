@@ -10,6 +10,7 @@ import type {
   ExposureParam,
   ExposureSettings,
   FlashMode,
+  SelfTimer,
 } from '../types/camera.types';
 
 /**
@@ -74,12 +75,24 @@ export const FLASH_ICONS: Record<FlashMode, AndroidIcon> = {
 
 export const FLASH_ORDER: FlashMode[] = ['off', 'auto', 'on'];
 
+export const SELF_TIMER_ORDER: SelfTimer[] = [0, 3, 5, 10];
+
+/** One stopwatch for every delay (the seconds are written next to it), crossed out when off. */
+export const SELF_TIMER_ICONS: Record<SelfTimer, AndroidIcon> = {
+  0: 'timer_off',
+  3: 'timer',
+  5: 'timer',
+  10: 'timer',
+};
+
+export const formatSelfTimer = (seconds: SelfTimer) => `${seconds}s`;
+
 export const CAPTURE_MODES: { id: CaptureMode; label: string; name: string; description: string }[] = [
   {
     id: 'auto',
     label: 'AUTO',
     name: 'Tự động',
-    description: 'Máy tự chọn tốc độ màn trập và ISO. Phù hợp chụp nhanh.',
+    description: 'Máy tự chọn tốc độ màn trập và ISO, bạn vẫn bù sáng EV được. Phù hợp chụp nhanh.',
   },
   {
     id: 'p',
@@ -97,16 +110,16 @@ export const CAPTURE_MODES: { id: CaptureMode; label: string; name: string; desc
     id: 'm',
     label: 'M',
     name: 'Thủ công',
-    description: 'Bạn chọn ISO và tốc độ màn trập. Số EV trên khung ngắm báo ảnh sáng (+) hay tối (−) hơn đo sáng.',
+    description: 'Bạn tự chọn ISO và tốc độ màn trập, máy không can thiệp phơi sáng.',
   },
 ];
 
 /** Shown under the mode picker when the camera cannot drive the sensor manually. */
-export const MANUAL_UNSUPPORTED_NOTE = 'Camera này không hỗ trợ chỉnh ISO / tốc độ thủ công nên S và M bị tắt.';
+export const MANUAL_UNSUPPORTED_NOTE = 'Ống kính này không hỗ trợ S / M (chỉnh tay).';
 
 /** Which exposure values the user controls in each mode. */
 export const MODE_PARAMS: Record<CaptureMode, ExposureParam[]> = {
-  auto: [],
+  auto: ['ev'],
   p: ['ev'],
   s: ['shutter', 'ev'],
   m: ['iso', 'shutter'],

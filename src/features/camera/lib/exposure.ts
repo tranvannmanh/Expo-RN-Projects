@@ -1,49 +1,77 @@
 import {
-  EV_STEP,
-  ISO_STOPS,
-  PREVIEW_MAX_SHUTTER_SECONDS,
-  SHUTTER_STOPS,
+	EV_STEP,
+	ISO_STOPS,
+	MANUAL_MODES,
+	MODE_PARAMS,
+	PREVIEW_MAX_SHUTTER_SECONDS,
+	SHUTTER_STOPS,
 } from '../constants/camera.constants';
-import type { ExposureReading } from '../types/camera.types';
+import type {
+	CaptureMode,
+	ExposureParam,
+	ExposureReading,
+} from '../types/camera.types';
 
 const SUB_SECOND = 0.3;
 
+/** Shutter speed alone, e.g. `1/80` or `2"`; for places already titled "SS". */
+export function formatShutterValue(seconds: number): string {
+	if (seconds <= 0) return '--';
+	if (seconds < SUB_SECOND) return `1/${Math.round(1 / seconds)}`;
+	return `${Number(seconds.toFixed(1))}"`;
+}
+
 export function formatShutter(seconds: number): string {
-  if (seconds <= 0) return '--';
-  if (seconds < SUB_SECOND) return `1/${Math.round(1 / seconds)}`;
-  return `${Number(seconds.toFixed(1))}"`;
+	return `SS ${formatShutterValue(seconds)}`;
 }
 
 export function formatIso(iso: number): string {
-  return iso > 0 ? `ISO ${Math.round(iso)}` : 'ISO --';
+	return iso > 0 ? `ISO ${Math.round(iso)}` : 'ISO --';
 }
 
 export function formatEv(ev: number): string {
-  const rounded = Math.round(ev * 10) / 10;
-  if (rounded === 0) return '±0.0';
-  return `${rounded > 0 ? '+' : '−'}${Math.abs(rounded).toFixed(1)}`;
+	const rounded = Math.round(ev * 10) / 10;
+	if (rounded === 0) return '±0.0';
+	return `${rounded > 0 ? '+' : '−'}${Math.abs(rounded).toFixed(1)}`;
+}
+
+/**
+ * Exposure values the user controls in `mode`. A lens without manual sensor
+ * control runs S / M as auto, so only the auto controls apply there.
+ */
+export function activeParams(
+	mode: CaptureMode,
+	isManual: boolean,
+): ExposureParam[] {
+	return MANUAL_MODES.includes(mode) && !isManual
+		? MODE_PARAMS.auto
+		: MODE_PARAMS[mode];
 }
 
 export function shutterStops(min: number, max: number): number[] {
-  return SHUTTER_STOPS.filter((s) => s >= min && s <= max);
+	return SHUTTER_STOPS.filter((s) => s >= min && s <= max);
 }
 
 export function isoStops(min: number, max: number): number[] {
-  return ISO_STOPS.filter((s) => s >= min && s <= max);
+	return ISO_STOPS.filter((s) => s >= min && s <= max);
 }
 
 export function evStops(min: number, max: number): number[] {
-  const stops: number[] = [];
-  const steps = Math.floor((max - min) / EV_STEP + 1e-6);
-  for (let i = 0; i <= steps; i++) stops.push(Math.round((min + i * EV_STEP) * 100) / 100);
-  return stops;
+	const stops: number[] = [];
+	const steps = Math.floor((max - min) / EV_STEP + 1e-6);
+	for (let i = 0; i <= steps; i++)
+		stops.push(Math.round((min + i * EV_STEP) * 100) / 100);
+	return stops;
 }
 
 export function nearest(values: number[], target: number): number {
-  return values.reduce(
-    (best, v) => (Math.abs(Math.log(v / target)) < Math.abs(Math.log(best / target)) ? v : best),
-    values[0] ?? target,
-  );
+	return values.reduce(
+		(best, v) =>
+			Math.abs(Math.log(v / target)) < Math.abs(Math.log(best / target))
+				? v
+				: best,
+		values[0] ?? target,
+	);
 }
 
 /**
@@ -51,23 +79,27 @@ export function nearest(values: number[], target: number): number {
  * stops, and solve for ISO at the chosen shutter speed.
  */
 export function isoForShutter(
-  reference: ExposureReading,
-  shutter: number,
-  ev: number,
-  range: { min: number; max: number },
+	reference: ExposureReading,
+	shutter: number,
+	ev: number,
+	range: { min: number; max: number },
 ): number {
-  const iso = ((reference.iso * reference.duration) / shutter) * 2 ** ev;
-  return Math.min(range.max, Math.max(range.min, Math.round(iso)));
+	const iso = ((reference.iso * reference.duration) / shutter) * 2 ** ev;
+	return Math.min(range.max, Math.max(range.min, Math.round(iso)));
 }
 
 /** Light-meter offset (stops) of a manual exposure versus the auto-metered one. */
-export function meterOffset(reference: ExposureReading, iso: number, shutter: number): number {
-  return Math.log2((iso * shutter) / (reference.iso * reference.duration));
+export function meterOffset(
+	reference: ExposureReading,
+	iso: number,
+	shutter: number,
+): number {
+	return Math.log2((iso * shutter) / (reference.iso * reference.duration));
 }
 
 export type PreviewExposure = ExposureReading & {
-  /** Extra brightness (stops) applied in the viewfinder shader when ISO tops out. */
-  gainEv: number;
+	/** Extra brightness (stops) applied in the viewfinder shader when ISO tops out. */
+	gainEv: number;
 };
 
 /**
@@ -76,12 +108,13 @@ export type PreviewExposure = ExposureReading & {
  * any remainder above the sensor's max ISO returned as a shader gain.
  */
 export function previewExposure(
-  capture: ExposureReading,
-  isoRange: { min: number; max: number },
+	capture: ExposureReading,
+	isoRange: { min: number; max: number },
 ): PreviewExposure {
-  if (capture.duration <= PREVIEW_MAX_SHUTTER_SECONDS) return { ...capture, gainEv: 0 };
-  const duration = PREVIEW_MAX_SHUTTER_SECONDS;
-  const wantedIso = (capture.iso * capture.duration) / duration;
-  const iso = Math.min(isoRange.max, Math.max(isoRange.min, wantedIso));
-  return { duration, iso: Math.round(iso), gainEv: Math.log2(wantedIso / iso) };
+	if (capture.duration <= PREVIEW_MAX_SHUTTER_SECONDS)
+		return { ...capture, gainEv: 0 };
+	const duration = PREVIEW_MAX_SHUTTER_SECONDS;
+	const wantedIso = (capture.iso * capture.duration) / duration;
+	const iso = Math.min(isoRange.max, Math.max(isoRange.min, wantedIso));
+	return { duration, iso: Math.round(iso), gainEv: Math.log2(wantedIso / iso) };
 }
