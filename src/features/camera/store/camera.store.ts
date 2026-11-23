@@ -7,6 +7,7 @@ import { zustandMMKVStorage } from '@/shared/services/storage.service';
 import {
   DEFAULT_ASPECT_ID,
   DEFAULT_EXPOSURE,
+  DEFAULT_WHITE_BALANCE,
   FLASH_ORDER,
   SELF_TIMER_ORDER,
 } from '../constants/camera.constants';
@@ -19,6 +20,7 @@ import type {
   ExposureSettings,
   FlashMode,
   SelfTimer,
+  WhiteBalanceSettings,
 } from '../types/camera.types';
 
 type CameraState = {
@@ -28,6 +30,7 @@ type CameraState = {
   flashMode: FlashMode;
   /** Delay between the shutter press and the capture (0 = off). */
   selfTimer: SelfTimer;
+  whiteBalance: WhiteBalanceSettings;
   facing: CameraFacing;
   mode: CaptureMode;
   exposure: ExposureSettings;
@@ -56,6 +59,7 @@ type CameraState = {
   setEffects: (patch: Partial<EffectSelection>) => void;
   cycleFlash: () => void;
   cycleSelfTimer: () => void;
+  setWhiteBalance: (patch: Partial<WhiteBalanceSettings>) => void;
   flipFacing: () => void;
   setMode: (mode: CaptureMode) => void;
   toggleGrid: () => void;
@@ -79,6 +83,7 @@ export const useCameraStore = create<CameraState>()(
       effects: NO_EFFECTS,
       flashMode: 'off',
       selfTimer: 0,
+      whiteBalance: DEFAULT_WHITE_BALANCE,
       facing: 'back',
       mode: 'auto',
       exposure: DEFAULT_EXPOSURE,
@@ -99,6 +104,7 @@ export const useCameraStore = create<CameraState>()(
         const index = FLASH_ORDER.indexOf(get().flashMode);
         set({ flashMode: FLASH_ORDER[(index + 1) % FLASH_ORDER.length] });
       },
+      setWhiteBalance: (patch) => set((s) => ({ whiteBalance: { ...s.whiteBalance, ...patch } })),
       cycleSelfTimer: () => {
         const index = SELF_TIMER_ORDER.indexOf(get().selfTimer);
         set({ selfTimer: SELF_TIMER_ORDER[(index + 1) % SELF_TIMER_ORDER.length] });
@@ -130,6 +136,7 @@ export const useCameraStore = create<CameraState>()(
         effects: s.effects,
         flashMode: s.flashMode,
         selfTimer: s.selfTimer,
+        whiteBalance: s.whiteBalance,
         facing: s.facing,
         mode: s.mode,
         exposure: s.exposure,

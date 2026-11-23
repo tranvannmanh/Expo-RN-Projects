@@ -1,9 +1,9 @@
 diff --git a/android/src/main/java/com/margelo/nitro/camera/extensions/ExposureTracker.kt b/android/src/main/java/com/margelo/nitro/camera/extensions/ExposureTracker.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..0ae1621e6c37bcb8badce12f0303ce4ae6e45d20
+index 0000000000000000000000000000000000000000..1040acfd0937a391aedc7104cc1d5b20393646bc
 --- /dev/null
 +++ b/android/src/main/java/com/margelo/nitro/camera/extensions/ExposureTracker.kt
-@@ -0,0 +1,54 @@
+@@ -0,0 +1,75 @@
 +package com.margelo.nitro.camera.extensions
 +
 +import android.content.Context
@@ -13,6 +13,7 @@ index 0000000000000000000000000000000000000000..0ae1621e6c37bcb8badce12f0303ce4a
 +import android.hardware.camera2.CaptureRequest
 +import android.hardware.camera2.CaptureResult
 +import android.hardware.camera2.TotalCaptureResult
++import android.hardware.camera2.params.ColorSpaceTransform
 +import com.margelo.nitro.NitroModules
 +
 +/**
@@ -27,6 +28,13 @@ index 0000000000000000000000000000000000000000..0ae1621e6c37bcb8badce12f0303ce4a
 +  @Volatile var exposureTimeNs: Long = 0
 +    private set
 +
++  /**
++   * Colour matrix the camera used while its own white balance ran; manual
++   * white-balance gains are combined with it (identity would desaturate).
++   */
++  @Volatile var autoColorTransform: ColorSpaceTransform? = null
++    private set
++
 +  val callback =
 +    object : CameraCaptureSession.CaptureCallback() {
 +      override fun onCaptureCompleted(
@@ -36,6 +44,9 @@ index 0000000000000000000000000000000000000000..0ae1621e6c37bcb8badce12f0303ce4a
 +      ) {
 +        result.get(CaptureResult.SENSOR_SENSITIVITY)?.let { iso = it }
 +        result.get(CaptureResult.SENSOR_EXPOSURE_TIME)?.let { exposureTimeNs = it }
++        if (result.get(CaptureResult.CONTROL_AWB_MODE) != CaptureResult.CONTROL_AWB_MODE_OFF) {
++          result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM)?.let { autoColorTransform = it }
++        }
 +      }
 +    }
 +
@@ -44,40 +55,52 @@ index 0000000000000000000000000000000000000000..0ae1621e6c37bcb8badce12f0303ce4a
 +   * capabilities it uses itself, so MANUAL_SENSOR has to be read from the
 +   * framework's CameraManager.
 +   */
-+  fun supportsManualSensor(cameraId: String?): Boolean {
-+    val id = cameraId ?: return false
-+    val context = NitroModules.applicationContext ?: return false
++  fun supportsManualSensor(cameraId: String?): Boolean =
++    hasCapability(cameraId, CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_SENSOR)
++
++  /** Manual colour gains (white balance by temperature) need MANUAL_POST_PROCESSING. */
++  fun supportsManualPostProcessing(cameraId: String?): Boolean =
++    hasCapability(cameraId, CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_POST_PROCESSING)
++
++  /** White-balance presets (CONTROL_AWB_MODE_*) this camera accepts. */
++  fun availableAwbModes(cameraId: String?): IntArray =
++    characteristics(cameraId)?.get(CameraCharacteristics.CONTROL_AWB_AVAILABLE_MODES) ?: IntArray(0)
++
++  private fun hasCapability(cameraId: String?, capability: Int): Boolean =
++    characteristics(cameraId)?.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)?.contains(capability) == true
++
++  private fun characteristics(cameraId: String?): CameraCharacteristics? {
++    val id = cameraId ?: return null
++    val context = NitroModules.applicationContext ?: return null
 +    return try {
-+      val manager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-+      manager
-+        .getCameraCharacteristics(id)
-+        .get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)
-+        ?.contains(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_SENSOR) == true
++      (context.getSystemService(Context.CAMERA_SERVICE) as CameraManager).getCameraCharacteristics(id)
 +    } catch (_: Exception) {
-+      false
++      null
 +    }
 +  }
 +}
 diff --git a/android/src/main/java/com/margelo/nitro/camera/hybrids/HybridCameraController.kt b/android/src/main/java/com/margelo/nitro/camera/hybrids/HybridCameraController.kt
-index 337601a7029d7d354a999275e1c1860b271b6fcf..269ff8bbce54041a2297f12d7490120f49272e17 100644
+index 337601a7029d7d354a999275e1c1860b271b6fcf..a56010ca59ec1fd1be9c1eadc3df6c442db6bc1f 100644
 --- a/android/src/main/java/com/margelo/nitro/camera/hybrids/HybridCameraController.kt
 +++ b/android/src/main/java/com/margelo/nitro/camera/hybrids/HybridCameraController.kt
-@@ -2,6 +2,14 @@ package com.margelo.nitro.camera.hybrids
+@@ -2,6 +2,16 @@ package com.margelo.nitro.camera.hybrids
  
  import android.animation.Animator
  import android.animation.ValueAnimator
 +import android.hardware.camera2.CameraCharacteristics
 +import android.hardware.camera2.CaptureRequest
++import android.hardware.camera2.params.RggbChannelVector
 +import android.util.Log
 +import android.util.Range
 +import androidx.camera.camera2.interop.Camera2CameraControl
 +import androidx.camera.camera2.interop.CaptureRequestOptions
 +import com.margelo.nitro.camera.extensions.ExposureTracker
 +import com.margelo.nitro.camera.extensions.cameraCharacteristicsOrNull
++import com.margelo.nitro.camera.extensions.cameraIdOrNull
  import androidx.camera.core.Camera
  import androidx.camera.core.CameraState
  import androidx.camera.core.FocusMeteringAction
-@@ -77,10 +85,15 @@ class HybridCameraController(
+@@ -77,10 +87,15 @@ class HybridCameraController(
    override val torchMode: TorchMode
      get() = TorchMode.fromTorchState(camera.cameraInfo.torchState.value ?: TorchState.OFF)
  
@@ -95,16 +118,24 @@ index 337601a7029d7d354a999275e1c1860b271b6fcf..269ff8bbce54041a2297f12d7490120f
  
    override val isLowLightBoostEnabled: Boolean
      get() = camera.cameraInfo.lowLightBoostState.value != LowLightBoostState.OFF
-@@ -93,7 +106,7 @@ class HybridCameraController(
+@@ -93,9 +108,14 @@ class HybridCameraController(
    override val focusMode: FocusMode
      get() = FocusMode.CONTINUOUS_AUTO_FOCUS
    override val exposureMode: ExposureMode
 -    get() = ExposureMode.CONTINUOUS_AUTO_EXPOSURE
-+    get() = if (isExposureManual) ExposureMode.LOCKED else ExposureMode.CONTINUOUS_AUTO_EXPOSURE
++    get() = if (manualExposure != null) ExposureMode.LOCKED else ExposureMode.CONTINUOUS_AUTO_EXPOSURE
    override val whiteBalanceMode: WhiteBalanceMode
-     get() = WhiteBalanceMode.CONTINUOUS_AUTO_WHITE_BALANCE
+-    get() = WhiteBalanceMode.CONTINUOUS_AUTO_WHITE_BALANCE
++    get() =
++      if (whiteBalance == WhiteBalanceSetting.Auto) {
++        WhiteBalanceMode.CONTINUOUS_AUTO_WHITE_BALANCE
++      } else {
++        WhiteBalanceMode.LOCKED
++      }
  
-@@ -201,7 +214,7 @@ class HybridCameraController(
+   override fun configure(config: CameraControllerConfiguration): Promise<Unit> {
+     return Promise.async {
+@@ -201,7 +221,7 @@ class HybridCameraController(
    override fun setExposureBias(exposure: Double): Promise<Unit> {
      return Promise.async {
        camera.cameraControl
@@ -113,14 +144,29 @@ index 337601a7029d7d354a999275e1c1860b271b6fcf..269ff8bbce54041a2297f12d7490120f
          .await()
      }
    }
-@@ -300,35 +313,99 @@ class HybridCameraController(
+@@ -300,59 +320,208 @@ class HybridCameraController(
      )
    }
  
 -  // TODO: Once CameraX implements locking Exposure to custom duration/ISO, implement this:
-+  // [Film Studio patch] Manual exposure through Camera2 interop.
++  // [Film Studio patch] Manual exposure and white balance through Camera2 interop.
++  // Camera2CameraControl replaces the whole option set on every call, so both are
++  // kept here and always applied together (see `currentOptions`).
 +  // `setExposureLocked(0, 0)` returns to continuous auto exposure.
-+  @Volatile private var isExposureManual = false
++  private data class ManualExposure(val exposureNs: Long, val iso: Int)
++
++  private sealed interface WhiteBalanceSetting {
++    data object Auto : WhiteBalanceSetting
++
++    /** A CONTROL_AWB_MODE_* preset (daylight, cloudy, ...). */
++    data class Preset(val mode: Int) : WhiteBalanceSetting
++
++    /** Fixed R / G / B gains (white balance by colour temperature). */
++    data class Gains(val red: Float, val green: Float, val blue: Float) : WhiteBalanceSetting
++  }
++
++  @Volatile private var manualExposure: ManualExposure? = null
++  @Volatile private var whiteBalance: WhiteBalanceSetting = WhiteBalanceSetting.Auto
 +  private val characteristics: CameraCharacteristics?
 +    get() = camera.cameraInfo.cameraCharacteristicsOrNull
 +
@@ -136,15 +182,41 @@ index 337601a7029d7d354a999275e1c1860b271b6fcf..269ff8bbce54041a2297f12d7490120f
 +      ?: ranges.maxByOrNull { it.lower }
 +  }
 +
-+  private fun autoExposureOptions(): CaptureRequestOptions {
++  private fun currentOptions(): CaptureRequestOptions {
 +    val builder = CaptureRequestOptions.Builder()
-+    autoExposureFpsRange?.let { builder.setCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, it) }
++    when (val exposure = manualExposure) {
++      null -> autoExposureFpsRange?.let { builder.setCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, it) }
++      else ->
++        builder
++          .setCaptureRequestOption(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF)
++          .setCaptureRequestOption(CaptureRequest.SENSOR_EXPOSURE_TIME, exposure.exposureNs)
++          .setCaptureRequestOption(CaptureRequest.SENSOR_SENSITIVITY, exposure.iso)
++          .setCaptureRequestOption(CaptureRequest.SENSOR_FRAME_DURATION, exposure.exposureNs)
++    }
++    when (val wb = whiteBalance) {
++      WhiteBalanceSetting.Auto -> Unit
++      is WhiteBalanceSetting.Preset -> builder.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_MODE, wb.mode)
++      is WhiteBalanceSetting.Gains -> {
++        builder
++          .setCaptureRequestOption(CaptureRequest.CONTROL_AWB_MODE, CaptureRequest.CONTROL_AWB_MODE_OFF)
++          .setCaptureRequestOption(
++            CaptureRequest.COLOR_CORRECTION_MODE,
++            CaptureRequest.COLOR_CORRECTION_MODE_TRANSFORM_MATRIX,
++          ).setCaptureRequestOption(
++            CaptureRequest.COLOR_CORRECTION_GAINS,
++            RggbChannelVector(wb.red, wb.green, wb.green, wb.blue),
++          )
++        ExposureTracker.autoColorTransform?.let {
++          builder.setCaptureRequestOption(CaptureRequest.COLOR_CORRECTION_TRANSFORM, it)
++        }
++      }
++    }
 +    return builder.build()
 +  }
 +
 +  init {
 +    try {
-+      Camera2CameraControl.from(camera.cameraControl).setCaptureRequestOptions(autoExposureOptions())
++      Camera2CameraControl.from(camera.cameraControl).setCaptureRequestOptions(currentOptions())
 +    } catch (e: Exception) {
 +      Log.w("VisionCamera", "Could not apply auto-exposure FPS range", e)
 +    }
@@ -180,24 +252,15 @@ index 337601a7029d7d354a999275e1c1860b271b6fcf..269ff8bbce54041a2297f12d7490120f
 +    return Promise.async {
 +      val control = Camera2CameraControl.from(camera.cameraControl)
 +      if (duration <= 0.0 || iso <= 0.0) {
-+        isExposureManual = false
-+        applyWithoutWaiting(control, autoExposureOptions())
++        manualExposure = null
++        applyWithoutWaiting(control, currentOptions())
 +        return@async
 +      }
 +      if (!device.supportsExposureLocking) {
 +        throw Error("This camera does not support manual sensor control (MANUAL_SENSOR capability)!")
 +      }
-+      val exposureNs = (duration * 1e9).toLong()
-+      val options =
-+        CaptureRequestOptions
-+          .Builder()
-+          .setCaptureRequestOption(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF)
-+          .setCaptureRequestOption(CaptureRequest.SENSOR_EXPOSURE_TIME, exposureNs)
-+          .setCaptureRequestOption(CaptureRequest.SENSOR_SENSITIVITY, iso.toInt())
-+          .setCaptureRequestOption(CaptureRequest.SENSOR_FRAME_DURATION, exposureNs)
-+          .build()
-+      isExposureManual = true
-+      applyWithoutWaiting(control, options)
++      manualExposure = ManualExposure((duration * 1e9).toLong(), iso.toInt())
++      applyWithoutWaiting(control, currentOptions())
 +    }
 +  }
 +
@@ -227,19 +290,100 @@ index 337601a7029d7d354a999275e1c1860b271b6fcf..269ff8bbce54041a2297f12d7490120f
 +    return setExposureLocked(exposureDuration, iso)
    }
  
-   // TODO: Once CameraX implements locking AWB to custom White Balance Gains, implement this:
-@@ -355,4 +432,9 @@ class HybridCameraController(
-         "You can use AWB metering locks (`focusTo(point, { modes: ['AWB'], adaptiveness: 'locked' })`) instead.",
-     )
+-  // TODO: Once CameraX implements locking AWB to custom White Balance Gains, implement this:
++  // [Film Studio patch] White balance through Camera2 interop.
+   override val whiteBalanceGains: WhiteBalanceGains
+-    get() = WhiteBalanceGains(0.0, 0.0, 0.0)
++    get() =
++      when (val wb = whiteBalance) {
++        is WhiteBalanceSetting.Gains -> WhiteBalanceGains(redGain = wb.red.toDouble(), blueGain = wb.blue.toDouble(), greenGain = wb.green.toDouble())
++        else -> WhiteBalanceGains(redGain = 0.0, blueGain = 0.0, greenGain = 0.0)
++      }
+ 
++  /**
++   * Gains that render light of `temperature` (Kelvin) neutral; positive `tint`
++   * removes green (towards magenta). Normalised so the smallest gain is 1.
++   */
+   override fun convertWhiteBalanceTemperatureAndTintValues(whiteBalanceTemperatureAndTint: WhiteBalanceTemperatureAndTint): WhiteBalanceGains {
+-    throw Error(
+-      "Locking White Balance Gains is not yet supported on Android! " +
+-        "You can use AWB metering locks (`focusTo(point, { modes: ['AWB'], adaptiveness: 'locked' })`) instead.",
+-    )
++    val (r, g, b) = kelvinToRgb(whiteBalanceTemperatureAndTint.temperature)
++    val green = 1.0 - whiteBalanceTemperatureAndTint.tint / 100.0 * TINT_STRENGTH
++    val red = g / r
++    val blue = g / b
++    val smallest = minOf(red, green, blue)
++    return WhiteBalanceGains(redGain = red / smallest, blueGain = blue / smallest, greenGain = green / smallest)
    }
+ 
++  /**
++   * - all gains 0: continuous auto white balance,
++   * - `redGain < 0`: the preset CONTROL_AWB_MODE_* number `-redGain` (falls back to
++   *   auto if this camera does not offer it),
++   * - positive gains: fixed colour gains (needs MANUAL_POST_PROCESSING).
++   */
+   override fun setWhiteBalanceLocked(whiteBalanceGains: WhiteBalanceGains): Promise<Unit> {
+-    throw Error(
+-      "Locking White Balance Gains is not yet supported on Android! " +
+-        "You can use AWB metering locks (`focusTo(point, { modes: ['AWB'], adaptiveness: 'locked' })`) instead.",
+-    )
++    return Promise.async {
++      val (red, blue, green) = Triple(whiteBalanceGains.redGain, whiteBalanceGains.blueGain, whiteBalanceGains.greenGain)
++      whiteBalance =
++        when {
++          red < 0.0 -> {
++            val mode = (-red).toInt()
++            if (mode in ExposureTracker.availableAwbModes(camera.cameraInfo.cameraIdOrNull)) {
++              WhiteBalanceSetting.Preset(mode)
++            } else {
++              WhiteBalanceSetting.Auto
++            }
++          }
++          red <= 0.0 || green <= 0.0 || blue <= 0.0 -> WhiteBalanceSetting.Auto
++          else -> {
++            if (!device.supportsWhiteBalanceLocking) {
++              throw Error("This camera does not support manual white balance (MANUAL_POST_PROCESSING capability)!")
++            }
++            WhiteBalanceSetting.Gains(red.toFloat(), green.toFloat(), blue.toFloat())
++          }
++        }
++      applyWithoutWaiting(Camera2CameraControl.from(camera.cameraControl), currentOptions())
++    }
+   }
+ 
+   override fun lockCurrentWhiteBalance(): Promise<Unit> {
+-    throw Error(
+-      "Locking White Balance Gains is not yet supported on Android! " +
+-        "You can use AWB metering locks (`focusTo(point, { modes: ['AWB'], adaptiveness: 'locked' })`) instead.",
+-    )
++    throw Error("Locking the current white balance is not supported; pass gains or a preset to setWhiteBalanceLocked(...).")
++  }
++
++  /** Approximate sRGB colour of a black body (Tanner Helland), each channel 1..255. */
++  private fun kelvinToRgb(kelvin: Double): Triple<Double, Double, Double> {
++    val t = kelvin.coerceIn(1000.0, 40000.0) / 100.0
++    val r = if (t <= 66) 255.0 else 329.698727446 * Math.pow(t - 60, -0.1332047592)
++    val g = if (t <= 66) 99.4708025861 * Math.log(t) - 161.1195681661 else 288.1221695283 * Math.pow(t - 60, -0.0755148492)
++    val b =
++      when {
++        t >= 66 -> 255.0
++        t <= 19 -> 0.0
++        else -> 138.5177312231 * Math.log(t - 10) - 305.0447927307
++      }
++    return Triple(r.coerceIn(1.0, 255.0), g.coerceIn(1.0, 255.0), b.coerceIn(1.0, 255.0))
++  }
 +
 +  private companion object {
 +    /** Lowest viewfinder frame rate auto exposure may drop to. */
 +    const val MIN_PREVIEW_FPS = 15
-+  }
++
++    /** Green reduction per 100 tint (magenta direction). */
++    const val TINT_STRENGTH = 0.3
+   }
  }
 diff --git a/android/src/main/java/com/margelo/nitro/camera/hybrids/inputs/HybridCameraDevice.kt b/android/src/main/java/com/margelo/nitro/camera/hybrids/inputs/HybridCameraDevice.kt
-index a00188fb157f776c8f922311b259bab14cb55265..2ace8de1ebea3423c291673b9bcfa1b00c0a6092 100644
+index a00188fb157f776c8f922311b259bab14cb55265..b89ca2e8fe84faa1705d89e9462a1522cd6801da 100644
 --- a/android/src/main/java/com/margelo/nitro/camera/hybrids/inputs/HybridCameraDevice.kt
 +++ b/android/src/main/java/com/margelo/nitro/camera/hybrids/inputs/HybridCameraDevice.kt
 @@ -24,6 +24,7 @@ import com.margelo.nitro.camera.PixelFormat
@@ -250,7 +394,7 @@ index a00188fb157f776c8f922311b259bab14cb55265..2ace8de1ebea3423c291673b9bcfa1b0
  import com.margelo.nitro.camera.extensions.cameraCharacteristicsOrNull
  import com.margelo.nitro.camera.extensions.cameraIdOrNull
  import com.margelo.nitro.camera.extensions.contains
-@@ -128,8 +129,9 @@ class HybridCameraDevice(
+@@ -128,24 +129,28 @@ class HybridCameraDevice(
    // TODO: CameraX doesn't support manual Focus/Exposure/WB locking...
    override val supportsFocusLocking: Boolean
      get() = false
@@ -258,10 +402,14 @@ index a00188fb157f776c8f922311b259bab14cb55265..2ace8de1ebea3423c291673b9bcfa1b0
    override val supportsExposureLocking: Boolean
 -    get() = false
 +    get() = ExposureTracker.supportsManualSensor(cameraInfo.cameraIdOrNull)
++  // [Film Studio patch] white balance by temperature via manual colour gains
    override val supportsWhiteBalanceLocking: Boolean
-     get() = false
+-    get() = false
++    get() = ExposureTracker.supportsManualPostProcessing(cameraInfo.cameraIdOrNull)
  
-@@ -138,14 +140,16 @@ class HybridCameraDevice(
+   override val maxWhiteBalanceGain: Double
+-    get() = 0.0
++    get() = if (supportsWhiteBalanceLocking) MAX_WB_GAIN else 0.0
  
    override val supportsExposureBias: Boolean
      get() = cameraInfo.exposureState.isExposureCompensationSupported
@@ -283,6 +431,13 @@ index a00188fb157f776c8f922311b259bab14cb55265..2ace8de1ebea3423c291673b9bcfa1b0
  
    override val supportsSmoothAutoFocus: Boolean
      get() = false
+@@ -288,3 +293,6 @@ class HybridCameraDevice(
+     }
+   }
+ }
++
++/** [Film Studio patch] Upper bound for manual white-balance channel gains. */
++private const val MAX_WB_GAIN = 8.0
 diff --git a/android/src/main/java/com/margelo/nitro/camera/hybrids/outputs/HybridFrameOutput.kt b/android/src/main/java/com/margelo/nitro/camera/hybrids/outputs/HybridFrameOutput.kt
 index 41ddfad34b8abcc84f00038f20fe1c4219c665f7..061b71f946f5697daade164811f758e6d7613f9e 100644
 --- a/android/src/main/java/com/margelo/nitro/camera/hybrids/outputs/HybridFrameOutput.kt

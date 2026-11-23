@@ -1,6 +1,10 @@
 import { describeEffects, getFilmPreset } from '@/features/photo-editor';
 
-import { SELF_TIMER_ICONS, formatSelfTimer } from '../constants/camera.constants';
+import {
+  SELF_TIMER_ICONS,
+  formatSelfTimer,
+  getWhiteBalanceOption,
+} from '../constants/camera.constants';
 import { activeParams, formatEv, formatShutterValue } from '../lib/exposure';
 import { useCameraStore } from '../store/camera.store';
 import type { AspectOption, CameraPanel, CaptureMode, ExposureSettings } from '../types/camera.types';
@@ -26,6 +30,8 @@ export function useFnMenu(input: FnMenuInput): FnItem[] {
   const filmId = useCameraStore((s) => s.filmId);
   const effects = useCameraStore((s) => s.effects);
   const selfTimer = useCameraStore((s) => s.selfTimer);
+  const whiteBalance = useCameraStore((s) => s.whiteBalance);
+  const wbOption = getWhiteBalanceOption(whiteBalance.preset);
   const facing = useCameraStore((s) => s.facing);
   const showGrid = useCameraStore((s) => s.showGrid);
   const cycleSelfTimer = useCameraStore((s) => s.cycleSelfTimer);
@@ -56,6 +62,12 @@ export function useFnMenu(input: FnMenuInput): FnItem[] {
       value: formatEv(params.includes('ev') ? exposure.ev : 0),
       disabled: !params.includes('ev'),
       onPress: () => openPanel('ev'),
+    },
+    {
+      id: 'whiteBalance',
+      icon: wbOption.icon,
+      value: whiteBalance.preset === 'kelvin' ? `${whiteBalance.kelvin}K` : wbOption.short,
+      onPress: () => openPanel('whiteBalance'),
     },
     {
       id: 'film',

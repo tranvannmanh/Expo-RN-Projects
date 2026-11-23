@@ -93,6 +93,7 @@ export default function CameraScreen() {
         sample={cam.sample}
         mode={exposure.mode}
         canManual={exposure.canManual}
+        canKelvin={cam.canKelvin}
         canBias={exposure.canBias}
         onMode={exposure.setMode}
         exposure={exposure.exposure}

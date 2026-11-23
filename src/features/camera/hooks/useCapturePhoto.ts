@@ -14,6 +14,7 @@ import { useAddToLibrary } from '@/features/library';
 
 import { capturePhoto } from '../api/camera.api';
 import { LONG_EXPOSURE_SECONDS, PERF_TOOLS_ENABLED } from '../constants/camera.constants';
+import type { ColorShift } from '../lib/white-balance';
 import { captureExifFallbacks } from '../lib/exif-fallbacks';
 import { useCameraStore } from '../store/camera.store';
 import type { CapturedShot, FlashMode } from '../types/camera.types';
@@ -22,6 +23,8 @@ type CaptureInput = {
   output: CameraPhotoOutput;
   filmId: string;
   effects: EffectSelection;
+  /** White-balance fine shift, baked into the photo like the film. */
+  colorShift: ColorShift;
   flashMode: FlashMode;
   /** Long:short ratio to crop to; undefined keeps the full sensor frame. */
   aspect?: number;
@@ -50,6 +53,7 @@ export function useCapturePhoto() {
       output,
       filmId,
       effects,
+      colorShift,
       flashMode,
       aspect,
       exposureSeconds,
@@ -69,7 +73,13 @@ export function useCapturePhoto() {
       });
       const capturedAt = Date.now();
       setSaving(true);
-      const recipe = { ...createDefaultRecipe(), filmId, effects };
+      const defaults = createDefaultRecipe();
+      const recipe = {
+        ...defaults,
+        filmId,
+        effects,
+        adjustments: { ...defaults.adjustments, ...colorShift },
+      };
       const saved = await exportPhoto({
         photo,
         recipe,
@@ -106,6 +116,7 @@ export function useCapturePhoto() {
         photo: { ...photo, uri: entry.sourceUri },
         filmId,
         effects,
+        adjustments: saved.recipe.adjustments,
         geometry: saved.recipe.geometry,
         thumb: saved.thumb,
       };

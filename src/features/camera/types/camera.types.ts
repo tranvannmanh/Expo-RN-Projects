@@ -1,7 +1,7 @@
 import type { SkImage } from '@shopify/react-native-skia';
 import type { CameraDevice, FlashMode } from 'react-native-vision-camera';
 
-import type { EffectSelection, Geometry, SourcePhoto } from '@/features/photo-editor';
+import type { EditRecipe, EffectSelection, Geometry, SourcePhoto } from '@/features/photo-editor';
 
 export type CameraFacing = 'back' | 'front';
 
@@ -23,6 +23,8 @@ export type ExposureParam = 'iso' | 'shutter' | 'ev';
 
 /** What the control area under the viewfinder shows. */
 export type CameraPanel =
+  | 'whiteBalance'
+  | 'whiteBalanceShift'
   | 'film'
   | 'fn'
   | 'mode'
@@ -66,6 +68,8 @@ export type CapturedShot = {
   filmId: string;
   /** Lens / light filter rendered into the photo, restored in the editor. */
   effects: EffectSelection;
+  /** Adjustments rendered in (white-balance shift), restored in the editor. */
+  adjustments: EditRecipe['adjustments'];
   /** Crop applied when saving (aspect ratio), reused when opening in the editor. */
   geometry: Geometry;
   /** Downscaled copy of the saved (filtered) photo. */
@@ -73,6 +77,26 @@ export type CapturedShot = {
 };
 
 export type { FlashMode };
+
+/** White-balance preset; `kelvin` uses a fixed colour temperature. */
+export type WhiteBalancePreset =
+  | 'auto'
+  | 'daylight'
+  | 'cloudy'
+  | 'shade'
+  | 'incandescent'
+  | 'fluorescent'
+  | 'kelvin';
+
+export type WhiteBalanceSettings = {
+  preset: WhiteBalancePreset;
+  /** Colour temperature used by the `kelvin` preset. */
+  kelvin: number;
+  /** Fine shift in steps: negative = A (amber), positive = B (blue). */
+  ab: number;
+  /** Fine shift in steps: negative = G (green), positive = M (magenta). */
+  gm: number;
+};
 
 /** Self-timer delay in seconds (0 = off). */
 export type SelfTimer = 0 | 3 | 5 | 10;

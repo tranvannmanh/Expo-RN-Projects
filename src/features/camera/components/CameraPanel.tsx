@@ -14,6 +14,8 @@ import { CameraEffectPicker } from './CameraEffectPicker';
 import { CameraModeBar } from './CameraModeBar';
 import { ExposureValuePicker } from './ExposureValuePicker';
 import { FnGrid } from './FnGrid';
+import { WhiteBalancePicker } from './WhiteBalancePicker';
+import { WhiteBalanceShiftPicker } from './WhiteBalanceShiftPicker';
 
 type CameraPanelProps = {
   panel: Panel;
@@ -22,6 +24,8 @@ type CameraPanelProps = {
   sample: SkImage | null;
   mode: CaptureMode;
   canManual: boolean;
+  /** Fixed colour-temperature white balance is available on this lens. */
+  canKelvin: boolean;
   canBias: boolean;
   onMode: (mode: CaptureMode) => void;
   exposure: ExposureSettings;
@@ -35,6 +39,8 @@ const TITLES: Partial<Record<Panel, string>> = {
   filmPicker: 'Màu phim',
   aspect: 'Tỷ lệ khung hình',
   effects: 'Hiệu ứng ống kính',
+  whiteBalance: 'Cân bằng trắng',
+  whiteBalanceShift: 'Tinh chỉnh cân bằng trắng',
 };
 
 /**
@@ -44,7 +50,9 @@ const TITLES: Partial<Record<Panel, string>> = {
 export function CameraPanel(props: CameraPanelProps) {
   const { panel, onPanel } = props;
   const isRoot = panel === 'film';
-  const close = () => onPanel(panel === 'fn' ? 'film' : 'fn');
+  // ✕ goes back one level: fine shift → white balance → Fn → presets.
+  const close = () =>
+    onPanel(panel === 'fn' ? 'film' : panel === 'whiteBalanceShift' ? 'whiteBalance' : 'fn');
 
   const renderBody = () => {
     switch (panel) {
@@ -57,6 +65,15 @@ export function CameraPanel(props: CameraPanelProps) {
         return <AspectPicker />;
       case 'effects':
         return <CameraEffectPicker sample={props.sample} />;
+      case 'whiteBalance':
+        return (
+          <WhiteBalancePicker
+            canKelvin={props.canKelvin}
+            onAdjust={() => onPanel('whiteBalanceShift')}
+          />
+        );
+      case 'whiteBalanceShift':
+        return <WhiteBalanceShiftPicker />;
       case 'mode':
         return (
           <CameraModeBar

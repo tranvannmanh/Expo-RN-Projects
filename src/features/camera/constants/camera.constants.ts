@@ -11,6 +11,8 @@ import type {
   ExposureSettings,
   FlashMode,
   SelfTimer,
+  WhiteBalancePreset,
+  WhiteBalanceSettings,
 } from '../types/camera.types';
 
 /**
@@ -83,6 +85,50 @@ export const FLASH_BLOCKED_REASONS = {
 
 /** How long a header notice stays on screen. */
 export const HEADER_NOTICE_MS = 2500;
+
+type WhiteBalanceOption = {
+  id: WhiteBalancePreset;
+  label: string;
+  /** Short value for the Fn tile. */
+  short: string;
+  icon: AndroidIcon;
+  /** Camera2 CONTROL_AWB_MODE_* used by sensor presets. */
+  awbMode?: number;
+};
+
+/** Presets in Xperia order; the sensor does the balancing (preview and photo alike). */
+export const WHITE_BALANCE_OPTIONS: WhiteBalanceOption[] = [
+  { id: 'auto', label: 'Tự động', short: 'AWB', icon: 'wb_auto' },
+  { id: 'daylight', label: 'Ánh nắng', short: 'NẮNG', icon: 'wb_sunny', awbMode: 5 },
+  { id: 'cloudy', label: 'Trời mây', short: 'MÂY', icon: 'wb_cloudy', awbMode: 6 },
+  { id: 'shade', label: 'Bóng râm', short: 'RÂM', icon: 'wb_shade', awbMode: 8 },
+  { id: 'incandescent', label: 'Sợi đốt', short: 'SỢI ĐỐT', icon: 'wb_incandescent', awbMode: 2 },
+  { id: 'fluorescent', label: 'Huỳnh quang', short: 'HUỲNH QUANG', icon: 'wb_iridescent', awbMode: 3 },
+  { id: 'kelvin', label: 'Nhiệt độ K', short: 'K', icon: 'thermostat' },
+];
+
+export const getWhiteBalanceOption = (id: WhiteBalancePreset) =>
+  WHITE_BALANCE_OPTIONS.find((o) => o.id === id) ?? WHITE_BALANCE_OPTIONS[0];
+
+const KELVIN_MIN = 2500;
+const KELVIN_MAX = 9900;
+const KELVIN_STEP = 100;
+export const KELVIN_STOPS = Array.from(
+  { length: (KELVIN_MAX - KELVIN_MIN) / KELVIN_STEP + 1 },
+  (_, i) => KELVIN_MIN + i * KELVIN_STEP,
+);
+
+/** A–B / G–M fine shift: ±7 steps like Sony. */
+export const WB_SHIFT_STEPS = Array.from({ length: 15 }, (_, i) => i - 7);
+/** Shader temperature / tint units (of ±100) per shift step. */
+export const WB_SHIFT_UNIT = 4;
+
+export const DEFAULT_WHITE_BALANCE: WhiteBalanceSettings = {
+  preset: 'auto',
+  kelvin: 5500,
+  ab: 0,
+  gm: 0,
+};
 
 export const SELF_TIMER_ORDER: SelfTimer[] = [0, 3, 5, 10];
 

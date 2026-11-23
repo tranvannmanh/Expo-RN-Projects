@@ -13,6 +13,7 @@ import {
 } from '@/features/photo-editor';
 
 import { PERF_TOOLS_ENABLED } from '../constants/camera.constants';
+import type { ColorShift } from './white-balance';
 
 /**
  * Viewfinder counters written on the camera thread and read (then reset) by the
@@ -37,8 +38,9 @@ export function createFilmFrameRenderer(
   film: FilmPreset,
   lut: SkImage,
   effects: EffectSelection,
+  colorShift: ColorShift,
 ): FrameRenderer {
-  const base = buildUniforms(DEFAULT_ADJUSTMENTS, {
+  const base = buildUniforms({ ...DEFAULT_ADJUSTMENTS, ...colorShift }, {
     film,
     outSize: { width: 1, height: 1 },
     bypass: false,

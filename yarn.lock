@@ -5250,7 +5250,7 @@ __metadata:
 
 "react-native-vision-camera@patch:react-native-vision-camera@npm%3A5.2.4#~/.yarn/patches/react-native-vision-camera-npm-5.2.4-90fba800f3.patch":
   version: 5.2.4
-  resolution: "react-native-vision-camera@patch:react-native-vision-camera@npm%3A5.2.4#~/.yarn/patches/react-native-vision-camera-npm-5.2.4-90fba800f3.patch::version=5.2.4&hash=77c72e"
+  resolution: "react-native-vision-camera@patch:react-native-vision-camera@npm%3A5.2.4#~/.yarn/patches/react-native-vision-camera-npm-5.2.4-90fba800f3.patch::version=5.2.4&hash=695627"
   peerDependencies:
     react: "*"
     react-native: "*"
@@ -5259,7 +5259,7 @@ __metadata:
   peerDependenciesMeta:
     react-native-nitro-modules:
       optional: true
-  checksum: 10c0/827778b73391689d0f19962c5082055857c60051ea6bfec049e1617e5b35eadc90a07ccf44c8d31d682f1e201f9af2765179a4160b930654b54d5205536683fe
+  checksum: 10c0/09607ce8385c3d3d6f4c04868809dd49c55aca2fb007b5d3cb2427f1a159012135a7a79af86c148391cd099fa8b37033b1380b12764213da9daff296c4130c8c
   languageName: node
   linkType: hard
 

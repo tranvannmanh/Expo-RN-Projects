@@ -14,6 +14,7 @@ import {
   getAspectOption,
 } from '../constants/camera.constants';
 import { activeParams } from '../lib/exposure';
+import { colorShiftOf } from '../lib/white-balance';
 import { useCameraStore } from '../store/camera.store';
 import type { CameraPanel, ExposureParam } from '../types/camera.types';
 import { useAppActive } from './useAppActive';
@@ -26,12 +27,15 @@ import { useFnMenu } from './useFnMenu';
 import { useHardwareShutter } from './useHardwareShutter';
 import { useShutterFlash } from './useShutterFlash';
 import { useSelfTimer } from './useSelfTimer';
+import { useWhiteBalance } from './useWhiteBalance';
 
 /** Wires lens, exposure mode, film rendering and capture for the camera screen. */
 export function useFilmCamera() {
   const router = useRouter();
   const filmId = useCameraStore((s) => s.filmId);
   const effects = useCameraStore((s) => s.effects);
+  const whiteBalance = useCameraStore((s) => s.whiteBalance);
+  const colorShift = colorShiftOf(whiteBalance);
   const flashMode = useCameraStore((s) => s.flashMode);
   const facing = useCameraStore((s) => s.facing);
   const lastShot = useCameraStore((s) => s.lastShot);
@@ -59,8 +63,9 @@ export function useFilmCamera() {
   });
   const outputs = useMemo(() => [photoOutput], [photoOutput]);
   const sample = useFilmSample();
-  const onFrame = useFilmFrameRenderer(filmId, effects);
+  const onFrame = useFilmFrameRenderer(filmId, effects, colorShift);
   const exposure = useExposureControl(activeController);
+  const whiteBalanceControl = useWhiteBalance(activeController);
   const capture = useCapturePhoto();
   const shutterFlash = useShutterFlash();
   const isFocused = useIsFocused();
@@ -94,6 +99,7 @@ export function useFilmCamera() {
       output: photoOutput,
       filmId,
       effects,
+      colorShift,
       flashMode: hasFlash ? flashMode : 'off',
       exposureSeconds: expectedExposureSeconds(),
       exposureIso: expectedExposureIso(),
@@ -126,6 +132,7 @@ export function useFilmCamera() {
     openPhoto(lastShot.photo, {
       filmId: lastShot.filmId,
       effects: lastShot.effects,
+      adjustments: lastShot.adjustments,
       geometry: lastShot.geometry,
     });
     router.push('/editor');
@@ -179,6 +186,8 @@ export function useFilmCamera() {
     panel,
     setPanel,
     toggleFn,
+    /** Fixed white balance by colour temperature is available on this lens. */
+    canKelvin: whiteBalanceControl.canKelvin,
     editExposure,
     fnItems,
     /** Shutter press: shoots, or starts / cancels the self-timer countdown. */
