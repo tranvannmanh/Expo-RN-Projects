@@ -23,6 +23,7 @@ import {
   PREVIEW_RESOLUTION,
 } from '../constants/camera.constants';
 import { useCameraFocus } from '../hooks/useCameraFocus';
+import { useControllerSync } from '../hooks/useControllerSync';
 import type { FrameRenderer } from '../lib/film-frame';
 
 type FilmCameraViewProps = {
@@ -69,10 +70,11 @@ export function FilmCameraView({
     (point) => (skiaCamera.current ?? nativeCamera.current)?.focusTo(point),
   );
 
-  const onStarted = () => {
-    const controller = (skiaCamera.current ?? nativeCamera.current)?.controller;
-    if (controller) onController(controller);
-  };
+  const onStarted = useControllerSync(
+    () => (skiaCamera.current ?? nativeCamera.current)?.controller,
+    onController,
+    isActive,
+  );
   const onLayout = (e: LayoutChangeEvent) => setArea(e.nativeEvent.layout);
 
   // Fall back to CPU (YUV) frames when this camera rejects GPU buffers.

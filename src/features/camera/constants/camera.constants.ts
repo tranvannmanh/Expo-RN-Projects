@@ -150,6 +150,8 @@ export const DEFAULT_EXPOSURE: ExposureSettings = { iso: 100, shutter: 1 / 125, 
 
 /** How often the live ISO / shutter readout refreshes (ms). */
 export const EXPOSURE_POLL_MS = 400;
+/** How often the camera view is checked for a re-created controller. */
+export const CONTROLLER_SYNC_MS = 500;
 /** Time auto-exposure needs to settle before a meter reading (ms). */
 export const METER_SETTLE_MS = 600;
 

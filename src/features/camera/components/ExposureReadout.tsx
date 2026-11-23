@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { EditorColors, Spacing } from '@/constants/theme';
 
+import { MANUAL_MODES } from '../constants/camera.constants';
 import { formatEv, formatIso, formatShutter, meterOffset } from '../lib/exposure';
 import { useCameraStore } from '../store/camera.store';
 
@@ -19,14 +20,15 @@ export function ExposureReadout() {
   const mode = useCameraStore((s) => s.mode);
   const exposure = useCameraStore((s) => s.exposure);
 
-  const ev =
-    mode === 'm'
+  // S / M on a lens without manual control run as auto (no manual exposure applied).
+  const runsAuto = mode === 'auto' || (MANUAL_MODES.includes(mode) && !manualExposure);
+  const ev = runsAuto
+    ? 0
+    : mode === 'm'
       ? metered
         ? meterOffset(metered, exposure.iso, exposure.shutter)
         : 0
-      : mode === 'auto'
-        ? 0
-        : exposure.ev;
+      : exposure.ev;
 
   return (
     <View style={styles.bar} pointerEvents="none">

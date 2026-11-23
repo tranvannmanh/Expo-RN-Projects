@@ -1,6 +1,11 @@
 import { describeEffects, getFilmPreset } from '@/features/photo-editor';
 
-import { CAPTURE_MODES, FLASH_ICONS, MODE_PARAMS } from '../constants/camera.constants';
+import {
+  CAPTURE_MODES,
+  FLASH_ICONS,
+  MANUAL_MODES,
+  MODE_PARAMS,
+} from '../constants/camera.constants';
 import { formatEv, formatShutter } from '../lib/exposure';
 import { useCameraStore } from '../store/camera.store';
 import type {
@@ -40,7 +45,8 @@ export function useFnMenu(input: FnMenuInput): FnItem[] {
   const toggleGrid = useCameraStore((s) => s.toggleGrid);
 
   const { mode, exposure, lenses, lensId, openPanel } = input;
-  const params = MODE_PARAMS[mode];
+  // A lens without manual sensor control runs S / M as auto: don't offer dials that do nothing.
+  const params = MANUAL_MODES.includes(mode) && !input.isManual ? MODE_PARAMS.auto : MODE_PARAMS[mode];
   const lensIndex = Math.max(0, lenses.findIndex((l) => l.id === lensId));
 
   return [
