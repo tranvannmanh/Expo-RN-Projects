@@ -24,7 +24,7 @@ export function ToolPanel({ tool, thumb, shared, cropActions }: ToolPanelProps) 
   return (
     <View style={styles.panel}>
       {tool === 'film' ? <FilmPanel thumb={thumb} adjustments={shared.adjustments} /> : null}
-      {tool === 'effects' ? <EffectsPanel adjustments={shared.adjustments} /> : null}
+      {tool === 'effects' ? <EffectsPanel adjustments={shared.adjustments} thumb={thumb} /> : null}
       {tool === 'adjust' ? <AdjustPanel adjustments={shared.adjustments} /> : null}
       {tool === 'curve' ? <CurveEditor /> : null}
       {tool === 'crop' ? <CropPanel geometry={shared.geometry} actions={cropActions} /> : null}

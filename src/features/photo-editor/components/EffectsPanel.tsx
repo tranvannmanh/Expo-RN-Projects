@@ -1,3 +1,4 @@
+import type { SkImage } from '@shopify/react-native-skia';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
 
@@ -11,16 +12,18 @@ import { EffectPicker } from './EffectPicker';
 
 type EffectsPanelProps = {
   adjustments: SharedValue<Adjustments>;
+  /** Small copy of the photo the effect cards are rendered from. */
+  thumb: SkImage;
 };
 
 /** Editor tool: lens / light filter selection with a strength slider for each. */
-export function EffectsPanel({ adjustments }: EffectsPanelProps) {
+export function EffectsPanel({ adjustments, thumb }: EffectsPanelProps) {
   const effects = useEditorStore((s) => s.recipe.effects);
   const setEffects = useEditorStore((s) => s.setEffects);
 
   return (
     <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-      <EffectPicker value={effects} onChange={setEffects} />
+      <EffectPicker value={effects} onChange={setEffects} image={thumb} />
       <View style={styles.sliders}>
         {effects.lens !== 'none' ? (
           <AdjustmentSlider definition={LENS_AMOUNT_DEFINITION} adjustments={adjustments} />

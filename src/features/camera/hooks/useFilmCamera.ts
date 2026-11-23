@@ -7,12 +7,15 @@ import { useEditorStore } from '@/features/photo-editor';
 
 import {
   DEFAULT_ASPECT_ID as ASPECT_FULL_FRAME,
+  FLASH_BLOCKED_REASONS,
   PHOTO_QUALITY,
   PHOTO_RESOLUTION,
+  EDIT_MODE,
   getAspectOption,
 } from '../constants/camera.constants';
+import { activeParams } from '../lib/exposure';
 import { useCameraStore } from '../store/camera.store';
-import type { CameraPanel } from '../types/camera.types';
+import type { CameraPanel, ExposureParam } from '../types/camera.types';
 import { useAppActive } from './useAppActive';
 import { useCameraLenses } from './useCameraLenses';
 import { useCapturePhoto } from './useCapturePhoto';
@@ -65,7 +68,13 @@ export function useFilmCamera() {
   // Release the camera when the screen is left or the app goes to the background.
   const isActive = isFocused && app.isActive;
   // Flash needs auto exposure; S / M drive the sensor manually.
-  const hasFlash = Boolean(device?.hasFlash) && !exposure.isManual;
+  // Flash needs a flash unit on this lens and auto exposure (S / M drive the sensor manually).
+  const flashBlockedReason = !device?.hasFlash
+    ? FLASH_BLOCKED_REASONS.noFlashUnit
+    : exposure.isManual
+      ? FLASH_BLOCKED_REASONS.manualExposure
+      : null;
+  const hasFlash = flashBlockedReason === null;
 
   /** Manual shutter in S / M; otherwise the auto exposure currently metered. */
   const expectedExposureSeconds = () =>
@@ -122,6 +131,22 @@ export function useFilmCamera() {
     router.push('/editor');
   };
 
+  /**
+   * Tap on a shutter / ISO / EV value: opens its dial. When the current mode sets
+   * that value automatically, switch to the mode that hands it over first
+   * (SS → S, ISO → M); a lens without manual control can only offer the mode picker.
+   */
+  const editExposure = (param: ExposureParam) => {
+    if (activeParams(exposure.mode, exposure.isManual).includes(param)) {
+      setPanel(param);
+    } else if (exposure.canManual) {
+      exposure.setMode(EDIT_MODE[param]);
+      setPanel(param);
+    } else {
+      setPanel('mode');
+    }
+  };
+
   // Fn toggles the function grid; from any picker it returns to the presets.
   const toggleFn = () => setPanel((current) => (current === 'film' ? 'fn' : 'film'));
 
@@ -147,11 +172,14 @@ export function useFilmCamera() {
     /** Changes on every return to the foreground: remount the viewfinder. */
     sessionKey: app.resumeCount,
     hasFlash,
+    /** Why flash is unavailable right now, or null. */
+    flashBlockedReason,
     sample,
     exposure,
     panel,
     setPanel,
     toggleFn,
+    editExposure,
     fnItems,
     /** Shutter press: shoots, or starts / cancels the self-timer countdown. */
     shoot: selfTimer.trigger,

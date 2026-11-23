@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { SymbolView } from 'expo-symbols';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -36,6 +37,8 @@ export default function StudioScreen() {
 
 	return (
 		<ThemedView style={styles.container}>
+			{/* Own style: icons must contrast with this (theme-coloured) screen after dark screens. */}
+			<StatusBar style="auto" />
 			<SafeAreaView style={styles.safeArea}>
 				{photos.length ? (
 					// Album has photos: compact header + the 9 most recent.

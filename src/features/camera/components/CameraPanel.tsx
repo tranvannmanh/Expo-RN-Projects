@@ -56,7 +56,7 @@ export function CameraPanel(props: CameraPanelProps) {
       case 'aspect':
         return <AspectPicker />;
       case 'effects':
-        return <CameraEffectPicker />;
+        return <CameraEffectPicker sample={props.sample} />;
       case 'mode':
         return (
           <CameraModeBar

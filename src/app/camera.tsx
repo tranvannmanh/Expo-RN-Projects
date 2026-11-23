@@ -21,12 +21,14 @@ import {
   ViewfinderGrid,
   useCameraStore,
   useFilmCamera,
+  useHiddenStatusBar,
 } from '@/features/camera';
 
 export default function CameraScreen() {
   const router = useRouter();
   const permission = useCameraPermission();
   const cam = useFilmCamera();
+  useHiddenStatusBar();
   const showGrid = useCameraStore((s) => s.showGrid);
   const { exposure } = cam;
 
@@ -58,7 +60,7 @@ export default function CameraScreen() {
         onController={cam.onController}>
         {showGrid ? <ViewfinderGrid /> : null}
         <LensSelector lenses={cam.lenses} selectedId={cam.lensId} onSelect={cam.selectLens} />
-        <ExposureReadout isManual={exposure.isManual} />
+        <ExposureReadout isManual={exposure.isManual} onEditExposure={cam.editExposure} />
         {PERF_TOOLS_ENABLED ? <PerfHud /> : null}
         <LongExposureOverlay />
         <SelfTimerOverlay remaining={cam.timerRemaining} />
@@ -67,13 +69,16 @@ export default function CameraScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+    // No top inset: the status bar is hidden, so the header uses that space (the punch-hole
+    // camera sits between the left and right header controls).
+    <SafeAreaView style={styles.screen} edges={['bottom']}>
       <StatusBar style="light" />
       <CameraHeader
         isManual={exposure.isManual}
-        hasFlash={cam.hasFlash}
+        flashBlockedReason={cam.flashBlockedReason}
         onClose={() => router.back()}
         onPanel={cam.setPanel}
+        onEditExposure={cam.editExposure}
       />
       <View style={styles.preview}>{renderPreview()}</View>
       {cam.error ? (

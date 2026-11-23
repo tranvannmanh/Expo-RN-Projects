@@ -12,3 +12,4 @@ export { ShutterBar } from './components/ShutterBar';
 export { ViewfinderGrid } from './components/ViewfinderGrid';
 export { useCameraStore } from './store/camera.store';
 export { useFilmCamera } from './hooks/useFilmCamera';
+export { useHiddenStatusBar } from './hooks/useHiddenStatusBar';

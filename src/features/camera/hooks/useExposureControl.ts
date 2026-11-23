@@ -12,6 +12,7 @@ import {
 import {
   EV_LIMIT,
   EXPOSURE_POLL_MS,
+  EXPOSURE_RETRY_MS,
   MANUAL_MODES,
   MAX_SHUTTER_SECONDS,
   METER_SETTLE_MS,
@@ -27,6 +28,8 @@ import {
 } from '../lib/exposure';
 import { useCameraStore } from '../store/camera.store';
 import type { CaptureMode } from '../types/camera.types';
+
+const CAMERA_NOT_ACTIVE = /not active/i;
 
 type Target =
   | { kind: 'auto'; bias: number }
@@ -128,11 +131,21 @@ export function useExposureControl(controller: CameraController | undefined) {
       }
     };
     setError(null);
+    let retry: ReturnType<typeof setTimeout> | undefined;
     apply().catch((e: unknown) => {
-      if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+      if (cancelled) return;
+      const message = e instanceof Error ? e.message : String(e);
+      // A new controller can be reported before its camera has opened: CameraX rejects
+      // controls until then, so apply again shortly instead of showing an error.
+      if (CAMERA_NOT_ACTIVE.test(message)) {
+        retry = setTimeout(() => setNonce((n) => n + 1), EXPOSURE_RETRY_MS);
+      } else {
+        setError(message);
+      }
     });
     return () => {
       cancelled = true;
+      clearTimeout(retry);
     };
   }, [controller, targetKey, nonce, setMetered, setManualExposure]);
 
@@ -173,7 +186,16 @@ export function useExposureControl(controller: CameraController | undefined) {
     await setExposureBias(controller, 0);
     await wait(METER_SETTLE_MS);
     const reading = readExposure(controller);
-    if (reading) setMetered(reading);
+    if (reading) {
+      setMetered(reading);
+      // M: one-push metering. Keep the chosen shutter and set the ISO that exposes the
+      // scene like the meter did (nearest ISO stop, within the sensor's range).
+      const { mode: current, exposure: settings } = useCameraStore.getState();
+      if (current === 'm' && options.iso.length) {
+        const range = { min: controller.minISO, max: controller.maxISO };
+        setExposure({ iso: nearest(options.iso, isoForShutter(reading, settings.shutter, 0, range)) });
+      }
+    }
     setNonce((n) => n + 1);
   };
 

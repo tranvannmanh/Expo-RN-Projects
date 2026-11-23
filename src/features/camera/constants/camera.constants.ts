@@ -75,6 +75,15 @@ export const FLASH_ICONS: Record<FlashMode, AndroidIcon> = {
 
 export const FLASH_ORDER: FlashMode[] = ['off', 'auto', 'on'];
 
+/** Why the flash button is unavailable, shown when it is tapped. */
+export const FLASH_BLOCKED_REASONS = {
+  noFlashUnit: 'Ống kính này không có đèn flash — chuyển về ống kính chính (1x).',
+  manualExposure: 'Flash chỉ dùng được ở chế độ AUTO và P.',
+} as const;
+
+/** How long a header notice stays on screen. */
+export const HEADER_NOTICE_MS = 2500;
+
 export const SELF_TIMER_ORDER: SelfTimer[] = [0, 3, 5, 10];
 
 /** One stopwatch for every delay (the seconds are written next to it), crossed out when off. */
@@ -110,7 +119,7 @@ export const CAPTURE_MODES: { id: CaptureMode; label: string; name: string; desc
     id: 'm',
     label: 'M',
     name: 'Thủ công',
-    description: 'Bạn tự chọn ISO và tốc độ màn trập, máy không can thiệp phơi sáng.',
+    description: 'Bạn tự chọn ISO và tốc độ màn trập. Nút ĐO SÁNG trong Fn tự đặt ISO hợp với cảnh.',
   },
 ];
 
@@ -123,6 +132,13 @@ export const MODE_PARAMS: Record<CaptureMode, ExposureParam[]> = {
   p: ['ev'],
   s: ['shutter', 'ev'],
   m: ['iso', 'shutter'],
+};
+
+/** Mode to switch to when the user taps a value the current mode sets automatically. */
+export const EDIT_MODE: Record<ExposureParam, CaptureMode> = {
+  shutter: 's',
+  iso: 'm',
+  ev: 'p',
 };
 
 /** Modes that drive the sensor manually (AE off). */
@@ -167,6 +183,8 @@ export const EXPOSURE_POLL_MS = 400;
 export const CONTROLLER_SYNC_MS = 500;
 /** Time auto-exposure needs to settle before a meter reading (ms). */
 export const METER_SETTLE_MS = 600;
+/** Delay before re-applying exposure that a still-opening camera rejected. */
+export const EXPOSURE_RETRY_MS = 300;
 
 export const CameraLayout = {
   shutterSize: 76,
@@ -181,6 +199,12 @@ export const CameraLayout = {
   pillHeight: 32,
   /** Fixed height of the panel under the viewfinder (presets, Fn grid, pickers). */
   panelHeight: 156,
+  /** A cutout this close to the top edge (dp) shares the header band. */
+  cutoutEdgeTolerance: 4,
+  /** Clear space kept around a cutout (dp). */
+  cutoutMargin: 8,
+  /** Narrowest header side next to a cutout before the header moves below it (dp). */
+  cutoutMinSide: 140,
   fnTileHeight: 52,
   fnColumns: 6,
   fnButtonWidth: 64,

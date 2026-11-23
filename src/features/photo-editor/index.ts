@@ -2,6 +2,7 @@ export { PhotoCanvas } from './components/PhotoCanvas';
 export { ChipButton } from './components/ChipButton';
 export { EditorHeader } from './components/EditorHeader';
 export { EffectPicker } from './components/EffectPicker';
+export { SegmentedControl } from './components/SegmentedControl';
 export { EditorToolbar } from './components/EditorToolbar';
 export { ExportSheet } from './components/ExportSheet';
 export { FilmStrip } from './components/FilmStrip';
