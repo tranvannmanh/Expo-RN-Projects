@@ -4824,6 +4824,7 @@ __metadata:
     expo-image: "npm:~56.0.11"
     expo-image-manipulator: "npm:~56.0.26"
     expo-image-picker: "npm:~56.0.25"
+    expo-keep-awake: "npm:~56.0.3"
     expo-linking: "npm:~56.0.14"
     expo-media-library: "npm:~56.0.11"
     expo-router: "npm:~56.2.11"
